@@ -4,7 +4,7 @@ declare(strict_types=1);
 define('BASE_PATH', dirname(__DIR__));
 
 /** Versión publicada de la aplicación. Debe coincidir con el tag del release. */
-define('APP_VERSION', '1.0.1');
+define('APP_VERSION', '1.0.2');
 
 /**
  * Clave pública Ed25519 con la que se verifica la firma de latest.json.

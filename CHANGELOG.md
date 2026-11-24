@@ -4,6 +4,21 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.0.2] - 2026-11-24
+
+### Añadido
+
+- Guía de instalación (`LEEME.md`) dentro del paquete distribuible, con
+  requisitos, permisos, pasos del asistente, configuración en Nginx y problemas
+  frecuentes.
+- Guía de endurecimiento (`SEGURIDAD.md`) con las protecciones incluidas, lista
+  de comprobación del servidor, copias de seguridad y respuesta ante incidentes.
+
+### Cambiado
+
+- El empaquetado incluye también `SECURITY.md`, para que las guías del ZIP no
+  referencien un fichero ausente.
+
 ## [1.0.1] - 2026-11-24
 
 ### Añadido
