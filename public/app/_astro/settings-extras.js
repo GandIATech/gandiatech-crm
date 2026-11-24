@@ -1,6 +1,6 @@
 import { l as toast, n as confirmDialog, a as esc } from "./ui.CJdB5Grl.js";
 import { u as relativeTime } from "./format.BIwoWcf9.js";
-import { boot, request, upload } from "./crm-extras.js";
+import { boot, currentUser, request, upload } from "./crm-extras.js";
 
 const FIELD_LABELS = {
   name: "Nombre *",
@@ -285,7 +285,7 @@ async function loadUpdates(force) {
 
 function initUpdates() {
   const panel = document.getElementById("updates-panel");
-  if (!panel) return;
+  if (!panel || currentUser()?.role !== "admin") return;
   document.getElementById("updates-check")?.addEventListener("click", () => loadUpdates(true));
   loadUpdates(false);
 }
