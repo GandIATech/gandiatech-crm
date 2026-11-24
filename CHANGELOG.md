@@ -4,6 +4,29 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.0.3] - 2026-11-24
+
+### Añadido
+
+- Paquete para publicar el CRM dentro de una subcarpeta de un hosting Apache
+  (`/crm`, `/apps/crm`…): `empaquetar-subcarpeta.sh` genera `.htaccess` con
+  `RewriteBase`, un `index.php` en la raíz, las URLs del frontend con el prefijo
+  y la guía `LEEME-SUBCARPETA.md`.
+
+### Cambiado
+
+- La aplicación calcula la subcarpeta en tiempo de ejecución
+  (`crm_base_path()` y `crm_url()`), así que la API, el instalador, las
+  redirecciones, la cookie de sesión y los enlaces de las notificaciones
+  funcionan bajo un prefijo.
+- La raíz del paquete decide entre la aplicación y el instalador desde PHP
+  (`index.php`) en lugar de `%{DOCUMENT_ROOT}`: en hostings como IONOS esa
+  variable no coincide con la ruta real y toda visita acababa en `/install/`.
+- Los modales solo se cierran con la X, los botones de acción o Escape; el clic
+  fuera del diálogo ya no los descarta.
+- Textos del acceso: se elimina la referencia a «Uso interno» y se habla del
+  equipo del cliente en lugar de la marca.
+
 ## [1.0.2] - 2026-11-24
 
 ### Añadido

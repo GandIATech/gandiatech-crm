@@ -34,7 +34,7 @@ final class Installer
         $secure = Security::isHttps();
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/',
+            'path' => crm_base_path() . '/',
             'httponly' => true,
             'secure' => $secure,
             'samesite' => 'Lax',

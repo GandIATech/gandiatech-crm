@@ -11,6 +11,10 @@ Security::headers();
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$base = crm_base_path();
+if ($base !== '' && str_starts_with($path, $base . '/')) {
+    $path = substr($path, strlen($base));
+}
 $path = preg_replace('#^/api#', '', $path);
 $path = trim((string) $path, '/');
 $segments = $path === '' ? [] : explode('/', $path);
@@ -24,7 +28,7 @@ try {
     }
 
     if (!app_installed()) {
-        json_error('El CRM todavía no está instalado. Abre /install/ para completar la instalación.', 503);
+        json_error('El CRM todavía no está instalado. Abre ' . crm_url('/install/') . ' para completar la instalación.', 503);
     }
 
     if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {

@@ -32,13 +32,13 @@ if (!$installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $draft['db'] = $db;
             unset($draft['admin']);
             Installer::saveDraft($draft);
-            header('Location: /install/?step=2', true, 303);
+            header('Location: ' . crm_url('/install/?step=2'), true, 303);
             exit;
         }
 
         if ($action === 'admin') {
             if (empty($draft['db'])) {
-                header('Location: /install/?step=1', true, 303);
+                header('Location: ' . crm_url('/install/?step=1'), true, 303);
                 exit;
             }
             $name = clean_string($_POST['admin_name'] ?? '', 120);
@@ -72,13 +72,13 @@ if (!$installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password_hash' => Security::hashPassword($password),
             ];
             Installer::saveDraft($draft);
-            header('Location: /install/?step=3', true, 303);
+            header('Location: ' . crm_url('/install/?step=3'), true, 303);
             exit;
         }
 
         if ($action === 'install') {
             if (empty($draft['db']) || empty($draft['admin'])) {
-                header('Location: /install/?step=1', true, 303);
+                header('Location: ' . crm_url('/install/?step=1'), true, 303);
                 exit;
             }
             $installedCompany = (string) ($draft['app_name'] ?? 'Mi CRM');
@@ -154,7 +154,7 @@ if ($installCompleted) {
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FBF9F5">
 <title><?= e($pageTitle) ?> · GandiaTech CRM</title>
-<link rel="icon" type="image/svg+xml" href="/app/favicon.svg">
+<link rel="icon" type="image/svg+xml" href="<?= e(crm_url('/app/favicon.svg')) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
@@ -254,8 +254,8 @@ if ($installCompleted) {
 <div class="install-shell">
     <div class="install-wrap">
         <div class="install-brand">
-            <a href="/app/" style="text-decoration:none;display:inline-flex;align-items:center">
-                <img src="/app/gandiatech-logo-dark.png" alt="GandiaTech" width="1724" height="399" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+            <a href="<?= e(crm_url('/app/')) ?>" style="text-decoration:none;display:inline-flex;align-items:center">
+                <img src="<?= e(crm_url('/app/gandiatech-logo-dark.png')) ?>" alt="GandiaTech" width="1724" height="399" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
                 <span class="install-brand-text" style="display:none">GandiaTech <em>CRM</em></span>
             </a>
             <span class="install-badge">Instalación</span>
@@ -285,7 +285,7 @@ if ($installCompleted) {
                     <?php endif; ?>
                     <div class="install-actions">
                         <span class="install-note">Guarda el usuario administrador en un lugar seguro.</span>
-                        <a class="btn btn-primary" href="/app/">Acceder al CRM</a>
+                        <a class="btn btn-primary" href="<?= e(crm_url('/app/')) ?>">Acceder al CRM</a>
                     </div>
                 <?php elseif ($installed): ?>
                     <div class="done-icon" aria-hidden="true">
@@ -294,7 +294,7 @@ if ($installCompleted) {
                     <p class="install-sub" style="margin-top:0">Por seguridad, el instalador no vuelve a ejecutarse. Si necesitas reinstalar, elimina <code>config/config.php</code> y la base de datos actual.</p>
                     <div class="install-actions">
                         <span class="install-note">Instalación completada.</span>
-                        <a class="btn btn-primary" href="/app/">Acceder al CRM</a>
+                        <a class="btn btn-primary" href="<?= e(crm_url('/app/')) ?>">Acceder al CRM</a>
                     </div>
                 <?php else: ?>
                     <div class="steps" aria-label="Pasos de instalación">
@@ -308,7 +308,7 @@ if ($installCompleted) {
                     <?php endif; ?>
 
                     <?php if ($step === 1): ?>
-                        <form method="post" action="/install/?step=1" id="db-form">
+                        <form method="post" action="<?= e(crm_url('/install/?step=1')) ?>" id="db-form">
                             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                             <input type="hidden" name="action" value="db">
                             <p class="field-label">¿Dónde quieres guardar los datos?</p>
@@ -373,7 +373,7 @@ if ($installCompleted) {
                     <?php endif; ?>
 
                     <?php if ($step === 2): ?>
-                        <form method="post" action="/install/?step=2">
+                        <form method="post" action="<?= e(crm_url('/install/?step=2')) ?>">
                             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                             <input type="hidden" name="action" value="admin">
                             <div>
@@ -406,7 +406,7 @@ if ($installCompleted) {
                             <p class="install-sub" style="margin-top:8px">Mínimo 12 caracteres, con letras y al menos un número.</p>
 
                             <div class="install-actions">
-                                <a class="btn btn-secondary" href="/install/?step=1">Volver</a>
+                                <a class="btn btn-secondary" href="<?= e(crm_url('/install/?step=1')) ?>">Volver</a>
                                 <button type="submit" class="btn btn-primary">Continuar</button>
                             </div>
                         </form>
@@ -422,11 +422,11 @@ if ($installCompleted) {
                         <div class="install-note" style="margin-top:20px">
                             Se crearán las tablas, los estados de leads y los ajustes iniciales. El correo saliente quedará vacío para que lo configures cuando quieras.
                         </div>
-                        <form method="post" action="/install/?step=3">
+                        <form method="post" action="<?= e(crm_url('/install/?step=3')) ?>">
                             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                             <input type="hidden" name="action" value="install">
                             <div class="install-actions">
-                                <a class="btn btn-secondary" href="/install/?step=2">Volver</a>
+                                <a class="btn btn-secondary" href="<?= e(crm_url('/install/?step=2')) ?>">Volver</a>
                                 <button type="submit" class="btn btn-primary">Instalar CRM</button>
                             </div>
                         </form>
@@ -457,6 +457,6 @@ if ($installCompleted) {
     })();
 </script>
 <?php endif; ?>
-<script src="/app/password-tools.js" defer></script>
+<script src="<?= e(crm_url('/app/password-tools.js')) ?>" defer></script>
 </body>
 </html>

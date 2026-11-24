@@ -4,7 +4,7 @@ declare(strict_types=1);
 define('BASE_PATH', dirname(__DIR__));
 
 /** Versión publicada de la aplicación. Debe coincidir con el tag del release. */
-define('APP_VERSION', '1.0.2');
+define('APP_VERSION', '1.0.3');
 
 /**
  * Clave pública Ed25519 con la que se verifica la firma de latest.json.
@@ -71,6 +71,29 @@ function base_url(): string
         $rawHost = 'localhost:8002';
     }
     return ($https ? 'https' : 'http') . '://' . $rawHost;
+}
+
+/**
+ * Prefijo de URL cuando la aplicación se publica dentro de una subcarpeta
+ * (por ejemplo /crm). Devuelve '' si está en la raíz del dominio.
+ */
+function crm_base_path(): string
+{
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $dir = rtrim(str_replace('\\', '/', dirname($script)), '/');
+    $dir = (string) preg_replace('#/(?:api|install)$#', '', $dir);
+    $base = ($dir === '' || $dir === '.' || $dir === '/') ? '' : $dir;
+    return $base;
+}
+
+/** Construye una ruta absoluta de la aplicación respetando la subcarpeta. */
+function crm_url(string $path): string
+{
+    return crm_base_path() . '/' . ltrim($path, '/');
 }
 
 require __DIR__ . '/helpers.php';

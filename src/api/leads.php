@@ -160,7 +160,7 @@ function handle_leads(string $method, ?int $id, ?string $action, array $user): v
             'lead',
             'Nuevo lead: ' . $title,
             $user['name'] . ' ha creado el lead «' . $title . '» y lo ha asignado a ' . ($ownerId ? user_name($ownerId) : 'nadie') . '.',
-            '/app/leads/?lead=' . $newId
+            crm_url('/app/leads/?lead=' . $newId)
         );
 
         json_response(lead_full($newId, $user), 201);
@@ -249,7 +249,7 @@ function handle_leads(string $method, ?int $id, ?string $action, array $user): v
                 'Estado actualizado: ' . $title,
                 $user['name'] . ' ha movido el lead «' . $title . '» de ' . ($oldStatus['name'] ?? 'sin estado')
                     . ' a ' . $newStatus['name'] . '.',
-                '/app/leads/?lead=' . $id
+                crm_url('/app/leads/?lead=' . $id)
             );
         }
 
@@ -260,7 +260,7 @@ function handle_leads(string $method, ?int $id, ?string $action, array $user): v
                 'assignment',
                 'Lead asignado: ' . $title,
                 $user['name'] . ' te ha asignado el lead «' . $title . '».',
-                '/app/leads/?lead=' . $id
+                crm_url('/app/leads/?lead=' . $id)
             );
         }
 

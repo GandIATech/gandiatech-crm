@@ -123,7 +123,7 @@ function handle_projects(string $method, ?int $id, array $user): void
             'project',
             'Nuevo proyecto: ' . $name,
             $user['name'] . ' ha creado el proyecto «' . $name . '» y lo ha asignado a ' . user_name($ownerId) . '.',
-            '/app/projects/?project=' . $newId
+            crm_url('/app/projects/?project=' . $newId)
         );
 
         json_response(project_full($newId, $user), 201);
@@ -181,7 +181,7 @@ function handle_projects(string $method, ?int $id, array $user): void
                 'project',
                 'Proyecto asignado: ' . $name,
                 $user['name'] . ' te ha asignado el proyecto «' . $name . '».',
-                '/app/projects/?project=' . $id
+                crm_url('/app/projects/?project=' . $id)
             );
         }
 

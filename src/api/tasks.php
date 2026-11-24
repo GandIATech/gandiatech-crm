@@ -118,7 +118,7 @@ function handle_tasks(string $method, ?int $id, array $user): void
                 'task',
                 'Nueva tarea: ' . $title,
                 $user['name'] . ' te ha asignado la tarea «' . $title . '»' . ($due ? ' para el ' . $due : '') . '.',
-                '/app/tasks/?task=' . $newId
+                crm_url('/app/tasks/?task=' . $newId)
             );
         }
 
@@ -178,7 +178,7 @@ function handle_tasks(string $method, ?int $id, array $user): void
                 'task',
                 'Tarea completada: ' . $title,
                 $user['name'] . ' ha completado la tarea «' . $title . '».',
-                '/app/tasks/?task=' . $id
+                crm_url('/app/tasks/?task=' . $id)
             );
         }
 
@@ -188,7 +188,7 @@ function handle_tasks(string $method, ?int $id, array $user): void
                 'task',
                 'Tarea asignada: ' . $title,
                 $user['name'] . ' te ha asignado la tarea «' . $title . '».',
-                '/app/tasks/?task=' . $id
+                crm_url('/app/tasks/?task=' . $id)
             );
         }
 
