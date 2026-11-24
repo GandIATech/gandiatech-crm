@@ -336,9 +336,9 @@ function updates_download(): never
     header('Content-Disposition: attachment; filename="gandiatech-crm-basico-' . $version . '.zip"');
     header('Cache-Control: private, no-store');
     header('X-Content-Type-Options: nosniff');
+    log_activity('settings', null, 'actualizacion_descargada', 'ha descargado la actualización ' . $manifest['version']);
     readfile($target);
     @unlink($target);
-    log_activity('settings', null, 'actualizacion_descargada', 'ha descargado la actualización ' . $manifest['version']);
     exit;
 }
 
