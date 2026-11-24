@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Guía de uso del CRM: primeros pasos, leads, contactos, proyectos, tareas, usuarios, notificaciones y copias de seguridad.">
+<meta name="theme-color" content="#FBF9F5">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/app/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app/_astro/Icon.C2VO7wPO.css">
+<title>Ayuda y formación · CRM</title>
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-cream); color: var(--color-ink); }
+    .help-shell { min-height: 100vh; padding: 32px 16px 60px; }
+    .help-wrap { width: 100%; max-width: 1120px; margin: 0 auto; }
+    .help-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .help-top img { display: block; height: 34px; width: auto; }
+    .help-hero { border-radius: 26px; background: var(--color-ink); color: #fff; padding: 34px 32px; position: relative; overflow: hidden; }
+    .help-hero:before { content: ""; position: absolute; right: -60px; top: -80px; width: 280px; height: 280px; border-radius: 999px; background: color-mix(in oklab, var(--color-accent) 30%, transparent); filter: blur(44px); }
+    .help-hero > * { position: relative; }
+    .help-kicker { margin: 0; font-size: 10px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--color-accent); }
+    .help-title { margin: 10px 0 0; font-family: var(--font-display); font-size: clamp(30px, 5vw, 44px); line-height: 1.05; }
+    .help-lead { margin: 12px 0 0; max-width: 660px; font-size: 14px; line-height: 1.7; color: #ffffffa6; }
+    .help-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .help-meta span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid #ffffff1f; border-radius: 999px; font-size: 11px; font-weight: 600; color: #ffffffb8; background: #ffffff0a; }
+    .help-meta i { width: 5px; height: 5px; border-radius: 999px; background: var(--color-accent); }
+
+    .help-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 22px; }
+    .help-nav { position: sticky; top: 22px; background: #fff; border: 1px solid var(--color-line); border-radius: 22px; padding: 14px; }
+    .help-nav-label { margin: 4px 10px 10px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--color-muted); }
+    .help-nav-list { display: grid; gap: 4px; }
+    .help-nav-btn { display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 11px; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--color-ink); text-align: left; cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+    .help-nav-btn:hover { background: var(--color-cream); }
+    .help-nav-btn.is-active { background: var(--color-cream); border-color: var(--color-line); box-shadow: 0 1px 2px #1616160a; }
+    .help-nav-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; background: #f1efea; color: var(--color-muted); transition: background .15s ease, color .15s ease; }
+    .help-nav-btn.is-active .help-nav-icon { background: var(--color-accent-soft); color: var(--color-accent-dark); }
+    .help-nav-icon svg { width: 17px; height: 17px; }
+    .help-nav-btn strong { display: block; font-size: 13px; font-weight: 700; line-height: 1.25; }
+    .help-nav-btn small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.3; color: var(--color-muted); }
+    .help-nav-foot { margin-top: 14px; padding: 14px; border-radius: 16px; background: var(--color-ink); color: #fff; }
+    .help-nav-foot p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #ffffffa6; }
+    .help-nav-foot a { display: inline-flex; margin-top: 9px; font-size: 11.5px; font-weight: 700; color: var(--color-accent); text-decoration: none; }
+    .help-nav-foot a:hover { text-decoration: underline; }
+
+    .help-content { min-width: 0; }
+    .help-panel { display: none; background: #fff; border: 1px solid var(--color-line); border-radius: 24px; padding: 30px; }
+    .help-panel.is-active { display: block; animation: help-fade .22s ease both; }
+    @keyframes help-fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    .help-panel .badge { margin-bottom: 13px; }
+    .help-panel h2 { margin: 0; font-family: var(--font-display); font-size: clamp(24px, 3vw, 31px); line-height: 1.12; letter-spacing: -.01em; }
+    .help-intro { margin: 10px 0 0; max-width: 720px; font-size: 13.5px; line-height: 1.75; color: var(--color-muted); }
+    .help-steps { display: grid; gap: 0; margin-top: 26px; border-top: 1px solid var(--color-line); }
+    .help-step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--color-line); }
+    .help-step:last-child { border-bottom: 0; padding-bottom: 4px; }
+    .help-step-num { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-top: 1px; border-radius: 999px; background: var(--color-cream); color: var(--color-accent-dark); font-size: 12px; font-weight: 800; }
+    .help-step h3 { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.4; }
+    .help-step p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--color-muted); }
+    .help-step p strong { color: var(--color-ink); font-weight: 650; }
+    .help-callout { margin-top: 20px; padding: 15px 16px; border-left: 3px solid var(--color-accent); border-radius: 0 14px 14px 0; background: #fbf6f2; }
+    .help-callout strong { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--color-accent-dark); }
+    .help-callout p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.7; color: #5e514a; }
+    .help-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--color-line); }
+    .help-link { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--color-line); border-radius: 10px; background: #fff; color: var(--color-ink); font-size: 11.5px; font-weight: 650; text-decoration: none; transition: border-color .15s ease, background .15s ease; }
+    .help-link:hover { border-color: #d6d0c6; background: var(--color-cream); }
+    .help-link svg { width: 13px; height: 13px; color: var(--color-muted); }
+
+    .help-roles { width: 100%; margin-top: 20px; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+    .help-roles th { padding: 9px 10px; border-bottom: 1px solid var(--color-line); color: var(--color-muted); font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-align: left; }
+    .help-roles td { padding: 11px 10px; border-bottom: 1px solid var(--color-line); line-height: 1.5; vertical-align: top; }
+    .help-roles tr:last-child td { border-bottom: 0; }
+    .help-roles td:first-child { font-weight: 700; white-space: nowrap; }
+    .help-roles small { display: block; margin-top: 2px; color: var(--color-muted); font-weight: 400; }
+    .help-roles .yes { color: #1c6b45; font-weight: 700; }
+    .help-roles .no { color: #a35a3f; font-weight: 600; }
+    .help-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .help-tags span { padding: 4px 8px; border-radius: 7px; background: var(--color-cream); color: var(--color-muted); font-size: 10.5px; font-weight: 600; }
+    .help-footer { margin-top: 26px; text-align: center; font-size: 12px; color: var(--color-muted); }
+    .help-footer a { color: var(--color-accent-dark); font-weight: 600; }
+
+    @media (max-width: 860px) {
+        .help-layout { grid-template-columns: minmax(0, 1fr); }
+        .help-nav { position: static; padding: 12px; }
+        .help-nav-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
+        .help-nav-btn { flex: 0 0 auto; min-width: 190px; }
+        .help-nav-foot { display: none; }
+        .help-panel { padding: 24px 20px; }
+    }
+    @media (max-width: 640px) {
+        .help-nav-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+        .help-nav-btn { min-width: 0; padding: 9px; gap: 8px; }
+        .help-nav-btn small { display: none; }
+        .help-nav-icon { flex-basis: 28px; width: 28px; height: 28px; border-radius: 8px; }
+        .help-nav-icon svg { width: 15px; height: 15px; }
+    }
+    @media (max-width: 520px) {
+        .help-shell { padding-top: 22px; }
+        .help-hero { padding: 28px 22px; }
+        .help-step { grid-template-columns: 28px minmax(0, 1fr); gap: 11px; }
+        .help-step-num { width: 26px; height: 26px; font-size: 11px; }
+        .help-roles { display: block; overflow-x: auto; }
+    }
+</style>
+</head>
+<body>
+<div class="help-shell">
+    <div class="help-wrap">
+        <div class="help-top">
+            <a href="https://gandia.tech" target="_blank" rel="noreferrer" aria-label="GandiaTech">
+                <img src="/app/gandiatech-logo-dark.png" alt="GandiaTech" width="1724" height="399">
+            </a>
+            <a href="/app/" class="btn btn-secondary btn-sm">Volver al CRM</a>
+        </div>
+
+        <section class="help-hero">
+            <p class="help-kicker">Centro de ayuda</p>
+            <h1 class="help-title">Aprende a usar tu CRM</h1>
+            <p class="help-lead">Guías prácticas para configurar el espacio, mover oportunidades, organizar la entrega y trabajar en equipo sin perder el contexto.</p>
+            <div class="help-meta">
+                <span><i></i>6 temas</span>
+                <span><i></i>Lectura rápida</span>
+                <span><i></i>Disponible dentro del CRM</span>
+            </div>
+        </section>
+
+        <div class="help-layout">
+            <aside class="help-nav" aria-label="Temas de ayuda">
+                <p class="help-nav-label">Temas</p>
+                <div class="help-nav-list" role="tablist" aria-orientation="vertical">
+                    <button type="button" class="help-nav-btn is-active" role="tab" aria-selected="true" aria-controls="help-primeros-pasos" data-help-target="primeros-pasos">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg></span>
+                        <span><strong>Primeros pasos</strong><small>Configura tu espacio</small></span>
+                    </button>
+                    <button type="button" class="help-nav-btn" role="tab" aria-selected="false" aria-controls="help-leads" data-help-target="leads">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></span>
+                        <span><strong>Leads</strong><small>Gestiona oportunidades</small></span>
+                    </button>
+                    <button type="button" class="help-nav-btn" role="tab" aria-selected="false" aria-controls="help-contactos" data-help-target="contactos">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                        <span><strong>Contactos</strong><small>Centraliza personas</small></span>
+                    </button>
+                    <button type="button" class="help-nav-btn" role="tab" aria-selected="false" aria-controls="help-proyectos" data-help-target="proyectos">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></span>
+                        <span><strong>Proyectos y tareas</strong><small>Organiza la entrega</small></span>
+                    </button>
+                    <button type="button" class="help-nav-btn" role="tab" aria-selected="false" aria-controls="help-equipo" data-help-target="equipo">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+                        <span><strong>Equipo</strong><small>Usuarios y roles</small></span>
+                    </button>
+                    <button type="button" class="help-nav-btn" role="tab" aria-selected="false" aria-controls="help-datos" data-help-target="datos">
+                        <span class="help-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></span>
+                        <span><strong>Datos y correo</strong><small>Notificaciones y copias</small></span>
+                    </button>
+                </div>
+                <div class="help-nav-foot">
+                    <p>¿No encuentras lo que buscas? Cuéntanos qué necesitas y te ayudamos.</p>
+                    <a href="https://gandia.tech" target="_blank" rel="noreferrer">Contactar con soporte →</a>
+                </div>
+            </aside>
+
+            <main class="help-content">
+                <section class="help-panel is-active" id="help-primeros-pasos" role="tabpanel" aria-label="Primeros pasos" tabindex="-1">
+                    <span class="badge bg-accent-soft text-accent-dark">Primeros pasos</span>
+                    <h2>Deja el CRM listo para el equipo</h2>
+                    <p class="help-intro">Antes de empezar a registrar oportunidades, dedica unos minutos a revisar la identidad, el equipo y el pipeline. Es la base para que todos trabajen con los mismos criterios.</p>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Revisa el nombre de la empresa</h3>
+                                <p>Entra como administrador en <strong>Configuración</strong> y comprueba el nombre comercial. Se usa en la cabecera, en los correos y en la identidad general de la aplicación.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Crea los usuarios y asigna roles</h3>
+                                <p>Desde <strong>Usuarios</strong>, añade a cada persona con su rol. Un <strong>administrador</strong> gestiona la plataforma; un <strong>director</strong> ve los datos de todo el equipo; un usuario <strong>estándar</strong> solo ve sus propios leads y registros.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Ajusta los estados del pipeline</h3>
+                                <p>En <strong>Configuración → Estados de leads</strong> puedes ordenar, renombrar o añadir estados. Marca uno como ganado y otro como perdido: el dashboard y las métricas los usan para calcular resultados.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Deja el correo para cuando lo necesites</h3>
+                                <p>Las notificaciones dentro de la aplicación funcionan siempre. Si quieres enviar correos, configura SMTP en <strong>Configuración → Correo</strong> y envía un mensaje de prueba antes de avisar al equipo.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Ten en cuenta</strong>
+                        <p>Los ajustes de empresa, correo y estados son solo para administradores. Si eres usuario estándar o director, verás el CRM sin esas opciones de administración.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/settings/">Abrir Configuración <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                        <a class="help-link" href="/app/users/">Gestionar usuarios <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+
+                <section class="help-panel" id="help-leads" role="tabpanel" aria-label="Leads" tabindex="-1">
+                    <span class="badge bg-sky text-[#1E4C82]">Leads</span>
+                    <h2>Convierte oportunidades en clientes</h2>
+                    <p class="help-intro">El pipeline es la vista comercial del negocio. Cada lead guarda su empresa, valor, responsable, estado y todo el historial de conversación.</p>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Crea el lead con contexto</h3>
+                                <p>Pulsa <strong>Nuevo lead</strong> e indica empresa, título, contacto, valor estimado, origen y responsable. Cuanto mejor sea el contexto inicial, más fácil será priorizar.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Mueve el estado a medida que avanza</h3>
+                                <p>El pipeline por defecto es <strong>Nuevo → Contactado → Cualificado → Propuesta → Negociación → Ganado / Perdido</strong>. Puedes cambiar el estado desde la propia tabla sin abrir la ficha.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Registra cada interacción</h3>
+                                <p>Desde la ficha del lead añade llamadas, correos, reuniones o notas. La actividad queda en la cronología y alimenta la sección de actividad reciente del dashboard.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Pasa el trabajo a entrega</h3>
+                                <p>Cuando ganes una oportunidad, crea el proyecto desde el lead para conservar empresa, contacto y presupuesto. Después podrás repartir tareas y registrar horas.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">5</span>
+                            <div>
+                                <h3>Encuentra lo importante rápido</h3>
+                                <p>Combina la búsqueda por texto con los filtros de estado y responsable. El valor filtrado y el total se recalculan para que puedas revisar el pipeline de un vistazo.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Visibilidad</strong>
+                        <p>Un usuario estándar solo ve sus propios leads. Un director ve los de todo el equipo. El responsable de un lead nuevo se asigna al usuario que lo crea, salvo que un administrador o director lo cambie.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/leads/">Abrir Leads <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+
+                <section class="help-panel" id="help-contactos" role="tabpanel" aria-label="Contactos" tabindex="-1">
+                    <span class="badge bg-mint text-[#1C6B45]">Contactos</span>
+                    <h2>Centraliza las personas clave</h2>
+                    <p class="help-intro">Los contactos son las personas con las que hablas en cada empresa. Vinculados a los leads, evitan duplicar información y dan contexto a cada conversación.</p>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Crea la ficha de contacto</h3>
+                                <p>Guarda nombre, empresa, cargo, email, teléfono y responsable. La empresa se puede escribir directamente o seleccionar desde un lead existente.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Vincúlalo a una oportunidad</h3>
+                                <p>Al crear o editar un lead puedes elegir su contacto principal. Desde la ficha del contacto verás los leads vinculados y su estado actual.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Encuentra a la persona adecuada</h3>
+                                <p>Busca por nombre, empresa o correo y filtra por responsable. La tabla muestra la empresa, el cargo y los datos de contacto sin tener que abrir cada ficha.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Importa tu base existente</h3>
+                                <p>Si eres administrador, puedes importar contactos desde un CSV en <strong>Configuración → Importar</strong>. Revisa el mapeo de columnas antes de confirmar la importación.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Buenas prácticas</strong>
+                        <p>Usa un contacto por persona, no por empresa. Así podrás asociar varias personas de la misma cuenta a distintos leads sin duplicar fichas.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/contacts/">Abrir Contactos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+
+                <section class="help-panel" id="help-proyectos" role="tabpanel" aria-label="Proyectos y tareas" tabindex="-1">
+                    <span class="badge bg-sand text-[#8A5A00]">Proyectos y tareas</span>
+                    <h2>Organiza la entrega sin perder el hilo</h2>
+                    <p class="help-intro">Un proyecto agrupa el trabajo de un cliente. Las tareas son los siguientes pasos concretos: con responsable, prioridad, fecha y vínculo al lead o proyecto.</p>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Crea el proyecto</h3>
+                                <p>Indica nombre, contacto o lead, estado, presupuesto, fechas y responsable. Los estados disponibles son <strong>Planificado, En progreso, En pausa, Completado y Cancelado</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Arranca con una plantilla de tareas</h3>
+                                <p>Si el proyecto se repite, aplica una plantilla para crear las tareas base de una vez. Después ajusta fechas, responsables y prioridades según el cliente.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Trabaja desde la lista de tareas</h3>
+                                <p>Cambia el estado entre <strong>Pendiente, En progreso y Completada</strong>, ordena por prioridad o vencimiento y usa las vistas de abiertas, vencidas y completadas para no perder nada.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Registra horas y adjuntos</h3>
+                                <p>Imputa horas contra una tarea o proyecto para controlar el esfuerzo y el presupuesto consumido. Adjunta archivos en la ficha para tener el contexto en un solo sitio.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">5</span>
+                            <div>
+                                <h3>Cierra el proyecto con criterio</h3>
+                                <p>Marca el proyecto como completado cuando todas sus tareas estén cerradas. El progreso y el presupuesto consumido te ayudan a detectar desviaciones antes de terminar.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Relación entre piezas</strong>
+                        <p>Una tarea puede estar vinculada a un lead o a un proyecto. Ese vínculo hace que aparezca en el contexto correcto y que el equipo sepa para qué se está haciendo.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/projects/">Abrir Proyectos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                        <a class="help-link" href="/app/tasks/">Abrir Tareas <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+
+                <section class="help-panel" id="help-equipo" role="tabpanel" aria-label="Equipo" tabindex="-1">
+                    <span class="badge bg-cream text-muted">Equipo</span>
+                    <h2>Usuarios, roles y visibilidad</h2>
+                    <p class="help-intro">Cada persona entra con su propia cuenta. El rol determina qué puede hacer y, sobre todo, qué datos puede ver dentro del CRM.</p>
+                    <table class="help-roles">
+                        <thead>
+                            <tr><th>Rol</th><th>Datos que ve</th><th>Administración</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Administrador<small>Control total</small></td>
+                                <td>Todo el equipo y todas las secciones.</td>
+                                <td class="yes">Sí</td>
+                            </tr>
+                            <tr>
+                                <td>Director<small>Visión global</small></td>
+                                <td>Leads, contactos, proyectos, tareas, horas y actividad de todos.</td>
+                                <td class="no">No</td>
+                            </tr>
+                            <tr>
+                                <td>Estándar<small>Trabajo diario</small></td>
+                                <td>Solo sus propios leads y los registros asociados.</td>
+                                <td class="no">No</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Crea la cuenta y elige el rol</h3>
+                                <p>Desde <strong>Usuarios → Nuevo usuario</strong> indica nombre, correo y contraseña. La contraseña debe tener al menos 12 caracteres, con letras y un número. Elige <strong>Estándar</strong>, <strong>Director</strong> o <strong>Administrador</strong> según la responsabilidad de la persona.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Desactiva en lugar de borrar</h3>
+                                <p>Si alguien deja el equipo, desactiva su cuenta. El historial de leads, tareas y actividad se conserva y deja de poder iniciar sesión.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Restablece contraseñas</h3>
+                                <p>Un administrador puede asignar una nueva contraseña desde la ficha del usuario. Se marca como temporal: la persona podrá consultar datos, pero deberá cambiarla antes de guardar cambios. Compártela por un canal seguro.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Revisa la visibilidad antes de escalar</h3>
+                                <p>Si una persona necesita ver el pipeline completo pero no gestionar la plataforma, asígnale el rol <strong>Director</strong>. No hace falta convertirla en administradora.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Importante</strong>
+                        <p>Solo los administradores ven las secciones de Usuarios y Configuración. Ocultar un botón no es la única protección: la API también rechaza esas operaciones para el resto de roles.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/users/">Gestionar usuarios <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+
+                <section class="help-panel" id="help-datos" role="tabpanel" aria-label="Datos y correo" tabindex="-1">
+                    <span class="badge bg-cream text-muted">Datos y correo</span>
+                    <h2>Notificaciones, correo y copias</h2>
+                    <p class="help-intro">El CRM avisa dentro de la aplicación por defecto. El correo es opcional y se configura cuando quieras que las notificaciones salgan también por esa vía.</p>
+                    <div class="help-steps">
+                        <div class="help-step">
+                            <span class="help-step-num">1</span>
+                            <div>
+                                <h3>Usa las notificaciones in-app</h3>
+                                <p>La campana de la cabecera muestra avisos de leads asignados, tareas y actividad relevante. No necesitas configurar nada para que funcionen.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">2</span>
+                            <div>
+                                <h3>Configura SMTP si quieres correo</h3>
+                                <p>En <strong>Configuración → Correo</strong> indica host, puerto, usuario, contraseña, cifrado y remitente. Usa una cuenta o API key dedicada y guarda la contraseña solo en el CRM.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">3</span>
+                            <div>
+                                <h3>Envía una prueba antes de confiar</h3>
+                                <p>Guarda la configuración y envía un correo de prueba a tu propia dirección. Revisa el estado y los últimos envíos para detectar credenciales o puertos incorrectos.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">4</span>
+                            <div>
+                                <h3>Descarga copias de seguridad</h3>
+                                <p>Desde Configuración puedes descargar una copia de la base de datos. Guárdala en un lugar seguro y fuera del servidor, junto al archivo de configuración si lo necesitas para restaurar.</p>
+                            </div>
+                        </div>
+                        <div class="help-step">
+                            <span class="help-step-num">5</span>
+                            <div>
+                                <h3>Antes de publicar, revisa lo básico</h3>
+                                <p>Comprueba el nombre de empresa, que no queden datos de prueba, que el correo esté configurado si lo vas a usar y que cada usuario tenga el rol correcto.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-callout">
+                        <strong>Seguridad</strong>
+                        <p>No compartas la contraseña SMTP ni el archivo de configuración por canales abiertos. Si sospechas que se han expuesto, cámbialos y vuelve a guardar la configuración.</p>
+                    </div>
+                    <div class="help-links">
+                        <a class="help-link" href="/app/settings/">Abrir Configuración <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <p class="help-footer">¿Necesitas ayuda personalizada? <a href="https://gandia.tech" target="_blank" rel="noreferrer">Contacta con GandiaTech</a>.</p>
+    </div>
+</div>
+<script>
+(function () {
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-help-target]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('[data-help-panel], .help-panel'));
+    if (!buttons.length || !panels.length) return;
+
+    function show(id, updateHash, shouldScroll) {
+        var panel = document.getElementById('help-' + id);
+        if (!panel) return;
+
+        panels.forEach(function (item) {
+            var active = item === panel;
+            item.classList.toggle('is-active', active);
+            item.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+
+        buttons.forEach(function (button) {
+            var active = button.getAttribute('data-help-target') === id;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-selected', active ? 'true' : 'false');
+            button.setAttribute('tabindex', active ? '0' : '-1');
+        });
+
+        if (updateHash && window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', '#' + id);
+        }
+
+        if (shouldScroll) {
+            var layout = document.querySelector('.help-layout');
+            if (layout) {
+                var top = layout.getBoundingClientRect().top + window.pageYOffset - 20;
+                window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+            }
+        }
+    }
+
+    buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            show(button.getAttribute('data-help-target'), true, true);
+        });
+        button.addEventListener('keydown', function (event) {
+            var index = buttons.indexOf(button);
+            var next = null;
+            if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = buttons[(index + 1) % buttons.length];
+            if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = buttons[(index - 1 + buttons.length) % buttons.length];
+            if (!next) return;
+            event.preventDefault();
+            next.focus();
+            show(next.getAttribute('data-help-target'), true, false);
+        });
+    });
+
+    var initial = window.location.hash.replace('#', '');
+    var valid = buttons.some(function (button) { return button.getAttribute('data-help-target') === initial; });
+    show(valid ? initial : buttons[0].getAttribute('data-help-target'), false, false);
+
+    window.addEventListener('hashchange', function () {
+        var id = window.location.hash.replace('#', '');
+        var exists = buttons.some(function (button) { return button.getAttribute('data-help-target') === id; });
+        if (exists) show(id, false, false);
+    });
+})();
+</script>
+</body>
+</html>

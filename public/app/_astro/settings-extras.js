@@ -1,0 +1,233 @@
+import { l as toast, n as confirmDialog, a as esc } from "./ui.CJdB5Grl.js";
+import { u as relativeTime } from "./format.BIwoWcf9.js";
+import { boot, request, upload } from "./crm-extras.js";
+
+const FIELD_LABELS = {
+  name: "Nombre *",
+  email: "Correo",
+  phone: "Teléfono",
+  company: "Empresa",
+  notes: "Notas",
+};
+
+const HEADER_HINTS = {
+  name: ["nombre", "name", "contacto", "cliente"],
+  email: ["correo", "email", "e-mail", "mail"],
+  phone: ["telefono", "teléfono", "phone", "movil", "móvil"],
+  company: ["empresa", "company", "organizacion", "organización"],
+  notes: ["notas", "notes", "observaciones", "comentarios"],
+};
+
+let csvHeaders = [];
+let trashRows = [];
+let trashFilter = "";
+
+function normalize(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function parseDelimitedLine(line, delimiter) {
+  const cells = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index];
+    if (char === '"') {
+      if (quoted && line[index + 1] === '"') {
+        current += '"';
+        index++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === delimiter && !quoted) {
+      cells.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+async function readHeaders(file) {
+  const text = await file.text();
+  const firstLine = text.split(/\r?\n/).find((line) => line.trim() !== "") ?? "";
+  const delimiter = (firstLine.match(/;/g)?.length ?? 0) >= (firstLine.match(/,/g)?.length ?? 0) ? ";" : ",";
+  return parseDelimitedLine(firstLine.replace(/^\uFEFF/, ""), delimiter).map(
+    (header, index) => header || `Columna ${index + 1}`
+  );
+}
+
+function renderMapping() {
+  const container = document.getElementById("contacts-import-mapping");
+  if (!container) return;
+  container.innerHTML = Object.entries(FIELD_LABELS)
+    .map(([key, label]) => {
+      const suggested = csvHeaders.findIndex((header) =>
+        HEADER_HINTS[key].some((hint) => normalize(header).includes(normalize(hint)))
+      );
+      return `<div>
+        <label class="field-label">${label}</label>
+        <select class="select" data-map-field="${key}">
+          <option value="">— No importar —</option>
+          ${csvHeaders
+            .map(
+              (header, index) =>
+                `<option value="${index}" ${index === suggested ? "selected" : ""}>${esc(header)}</option>`
+            )
+            .join("")}
+        </select>
+      </div>`;
+    })
+    .join("");
+}
+
+function renderTrash() {
+  const list = document.getElementById("trash-list");
+  if (!list) return;
+  const rows = trashRows.filter((row) => !trashFilter || row.type === trashFilter);
+  if (rows.length === 0) {
+    list.innerHTML = '<p class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-[12px] text-muted">La papelera está vacía.</p>';
+    return;
+  }
+  list.innerHTML = rows
+    .map(
+      (row) => `
+      <div class="flex flex-wrap items-center gap-3 rounded-xl border border-line px-3.5 py-3" data-trash-row>
+        <span class="badge bg-cream text-[10px] text-muted">${esc(row.type_label)}</span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-[12.5px] font-semibold">${esc(row.label || `#${row.id}`)}</p>
+          <p class="text-[10px] text-muted">Eliminado ${esc(relativeTime(row.deleted_at))}</p>
+        </div>
+        <div class="flex gap-1.5">
+          <button type="button" class="btn btn-secondary btn-sm" data-trash-action="restore" data-type="${esc(row.type)}" data-id="${row.id}">Restaurar</button>
+          <button type="button" class="btn btn-danger btn-sm" data-trash-action="purge" data-type="${esc(row.type)}" data-id="${row.id}">Borrar definitivo</button>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  list.querySelectorAll("[data-trash-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const purge = button.dataset.trashAction === "purge";
+      if (purge) {
+        const confirmed = await confirmDialog({
+          title: "Borrar definitivamente",
+          message: "El elemento y sus datos asociados se eliminarán para siempre. Esta acción no se puede deshacer.",
+          confirmLabel: "Borrar definitivo",
+        });
+        if (!confirmed) return;
+      }
+      button.disabled = true;
+      try {
+        await request("/admin/trash", {
+          method: "POST",
+          body: { type: button.dataset.type, id: Number(button.dataset.id), action: purge ? "purge" : "restore" },
+        });
+        toast(purge ? "Elemento eliminado definitivamente." : "Elemento restaurado.");
+        await loadTrash();
+      } catch (error) {
+        toast(error.message, "error");
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadTrash() {
+  const list = document.getElementById("trash-list");
+  if (!list) return;
+  list.innerHTML = '<p class="p-4 text-[12px] text-muted">Cargando papelera…</p>';
+  try {
+    trashRows = (await request("/admin/trash")).data;
+    renderTrash();
+  } catch (error) {
+    list.innerHTML = `<p class="p-4 text-[12px] text-red-600">${esc(error.message)}</p>`;
+  }
+}
+
+function initImport() {
+  const form = document.getElementById("contacts-import-form");
+  const fileInput = document.getElementById("contacts-import-file");
+  const status = document.getElementById("contacts-import-status");
+  const mapping = document.getElementById("contacts-import-mapping");
+  if (!form || !fileInput || !mapping) return;
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    try {
+      csvHeaders = await readHeaders(file);
+      if (csvHeaders.length === 0) {
+        mapping.innerHTML = "";
+        toast("No se han detectado columnas en el CSV.", "error");
+        return;
+      }
+      renderMapping();
+      if (status) status.textContent = `${csvHeaders.length} columnas detectadas. Revisa el mapeo y pulsa importar.`;
+    } catch {
+      toast("No se pudo leer el CSV.", "error");
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const file = fileInput.files?.[0];
+    if (!file) {
+      toast("Selecciona un archivo CSV.", "error");
+      return;
+    }
+    const mappingData = {};
+    mapping.querySelectorAll("[data-map-field]").forEach((select) => {
+      if (select.value !== "") {
+        mappingData[select.dataset.mapField] = Number(select.value);
+      }
+    });
+    if (mappingData.name === undefined) {
+      toast("Indica qué columna contiene el nombre.", "error");
+      return;
+    }
+    const submit = form.querySelector('[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (status) status.textContent = "Importando contactos…";
+    const data = new FormData();
+    data.append("file", file);
+    data.append("mapping", JSON.stringify(mappingData));
+    try {
+      const result = await upload("/admin/import-contacts", data);
+      const messages = [`${result.imported} contactos importados`, `${result.skipped} omitidos`];
+      if (result.errors?.length) {
+        messages.push(`${result.errors.length} con incidencias`);
+      }
+      if (status) status.textContent = messages.join(" · ");
+      toast(`Importación completada: ${messages.join(", ")}.`);
+      form.reset();
+      mapping.innerHTML = "";
+      csvHeaders = [];
+    } catch (error) {
+      if (status) status.textContent = error.message;
+      toast(error.message, "error");
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+}
+
+async function init() {
+  await boot();
+  initImport();
+
+  document.getElementById("trash-filter")?.addEventListener("change", (event) => {
+    trashFilter = event.target.value;
+    renderTrash();
+  });
+  document.getElementById("trash-refresh")?.addEventListener("click", () => loadTrash());
+  await loadTrash();
+}
+
+init();

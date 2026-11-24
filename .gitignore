@@ -1,0 +1,16 @@
+# Configuración local: contiene la app_key y credenciales de base de datos.
+/config/config.php
+
+# Informe interno de auditoría: incluye rutas locales y detalles de seguridad.
+/INFORME-SEGURIDAD-QA.md
+
+# Datos locales, copias de seguridad y adjuntos subidos.
+/data/*.sqlite
+/data/*.sqlite-*
+/data/backup-*
+/data/php-error.log
+/data/uploads/*
+!/data/uploads/.gitkeep
+
+# Paquetes generados.
+/dist/
