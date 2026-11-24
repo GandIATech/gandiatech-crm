@@ -5,6 +5,7 @@
         "ext-openssl": "*",
         "ext-mbstring": "*",
         "ext-fileinfo": "*",
+        "ext-sodium": "*",
         "ext-session": "*",
         "phpmailer/phpmailer": "^7.2"
     }

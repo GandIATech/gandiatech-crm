@@ -74,9 +74,13 @@ vendor/          Dependencias de Composer (PHPMailer)
 ## Actualizaciones
 
 Cada versión se publica como un ZIP en **Releases**, con su checksum SHA-256
-y un manifiesto `latest.json`. La actualización consiste en reemplazar
-`src/`, `public/`, `database/` y `vendor/`, conservando `config/` y `data/`.
-Las migraciones de base de datos se aplican automáticamente al arrancar.
+y un manifiesto `latest.json` firmado. Los administradores pueden comprobar si
+hay una versión nueva y descargar el paquete verificado desde **Configuración →
+Actualizaciones**.
+
+La actualización consiste en reemplazar `src/`, `public/`, `database/` y
+`vendor/`, conservando `config/` y `data/`. Las migraciones de base de datos se
+aplican automáticamente al arrancar.
 
 Haz siempre una copia de seguridad de `config/` y `data/` antes de actualizar.
 

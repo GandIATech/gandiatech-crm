@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 final class Database
 {
+    /** Versión del esquema base incluido en database/schema*.sql. */
+    private const SCHEMA_BASELINE = 1;
+
     private static ?PDO $pdo = null;
     private static bool $initialized = false;
     private static string $driver = 'sqlite';
@@ -128,27 +131,25 @@ final class Database
             throw new RuntimeException('No se pudo leer el esquema de base de datos.');
         }
 
-        if ($driver !== 'mysql') {
-            $pdo->exec($schema);
-            return;
-        }
-
-        // PDO MySQL no siempre permite varias sentencias en un solo exec().
-        $schema = preg_replace('/^\s*--.*$/m', '', $schema) ?? $schema;
-        $statements = preg_split('/;\s*[\r\n]+/', $schema) ?: [];
-        foreach ($statements as $statement) {
-            $statement = trim($statement);
-            if ($statement === '') {
-                continue;
-            }
-            $pdo->exec($statement);
-        }
+        self::execSql($pdo, $schema, $driver);
     }
 
     /**
-     * Añade columnas nuevas a bases de datos ya existentes.
+     * Migra la base de datos al arrancar: primero completa el esquema histórico
+     * de forma idempotente y después aplica las migraciones numeradas.
      */
     private static function migrate(): void
+    {
+        $pdo = self::pdo();
+        self::migrateLegacyColumns($pdo);
+        self::applyVersionedMigrations($pdo);
+    }
+
+    /**
+     * Añade columnas e índices nuevas a bases de datos anteriores al sistema
+     * de migraciones. Es idempotente y se mantiene como red de seguridad.
+     */
+    private static function migrateLegacyColumns(PDO $pdo): void
     {
         $columns = [
             'users' => [
@@ -213,6 +214,114 @@ final class Database
         );
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, ip, attempted_at)');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, attempted_at)');
+    }
+
+    private static function ensureMigrationsTable(PDO $pdo): void
+    {
+        if (self::$driver === 'mysql') {
+            $pdo->exec(
+                'CREATE TABLE IF NOT EXISTS schema_migrations ('
+                . 'version INT UNSIGNED NOT NULL, applied_at VARCHAR(32) NOT NULL, '
+                . 'PRIMARY KEY (version)'
+                . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            return;
+        }
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS schema_migrations ('
+            . 'version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)'
+        );
+    }
+
+    /**
+     * Aplica en orden los archivos database/migrations/NNN_descripcion.sql que
+     * todavía no estén registrados en schema_migrations.
+     */
+    private static function applyVersionedMigrations(PDO $pdo): void
+    {
+        self::ensureMigrationsTable($pdo);
+
+        $applied = array_map('intval', $pdo->query('SELECT version FROM schema_migrations')->fetchAll(PDO::FETCH_COLUMN));
+        if ($applied === []) {
+            // El esquema base ya existe (instalación nueva o anterior a las migraciones).
+            $pdo->prepare(
+                self::insertIgnoreKeyword() . ' INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            )->execute([self::SCHEMA_BASELINE, now_utc()]);
+            $applied = [self::SCHEMA_BASELINE];
+        }
+
+        $files = glob(BASE_PATH . '/database/migrations/*.sql') ?: [];
+        sort($files, SORT_STRING);
+
+        foreach ($files as $file) {
+            $name = basename($file);
+            if (preg_match('/^(\d{3,})_[A-Za-z0-9._-]+\.sql$/', $name, $matches) !== 1) {
+                continue;
+            }
+            $version = (int) $matches[1];
+            if ($version <= 0 || in_array($version, $applied, true)) {
+                continue;
+            }
+
+            $sql = file_get_contents($file);
+            if ($sql === false) {
+                throw new RuntimeException('No se pudo leer la migración ' . $name . '.');
+            }
+
+            // MySQL hace commit implícito en DDL, así que allí no se usa transacción.
+            $useTransaction = self::$driver !== 'mysql';
+            if ($useTransaction) {
+                $pdo->beginTransaction();
+            }
+            try {
+                self::execSql($pdo, $sql, self::$driver);
+                $pdo->prepare(
+                    self::insertIgnoreKeyword() . ' INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+                )->execute([$version, now_utc()]);
+                if ($useTransaction) {
+                    $pdo->commit();
+                }
+            } catch (Throwable $e) {
+                if ($useTransaction && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                throw new RuntimeException('Falló la migración ' . $name . ': ' . $e->getMessage(), 0, $e);
+            }
+            $applied[] = $version;
+        }
+    }
+
+    /**
+     * Ejecuta uno o varios statements. MySQL no admite varios en un exec().
+     */
+    private static function execSql(PDO $pdo, string $sql, string $driver): void
+    {
+        if ($driver !== 'mysql') {
+            $pdo->exec($sql);
+            return;
+        }
+
+        $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
+        foreach (preg_split('/;\s*[\r\n]+/', $sql) ?: [] as $statement) {
+            $statement = trim($statement);
+            if ($statement !== '') {
+                $pdo->exec($statement);
+            }
+        }
+    }
+
+    /**
+     * Última versión de esquema aplicada. 1 es el esquema base inicial.
+     */
+    public static function schemaVersion(): int
+    {
+        try {
+            $pdo = self::pdo();
+            self::ensureMigrationsTable($pdo);
+            return (int) $pdo->query('SELECT COALESCE(MAX(version), 0) FROM schema_migrations')->fetchColumn();
+        } catch (Throwable $e) {
+            return 0;
+        }
     }
 
     /**

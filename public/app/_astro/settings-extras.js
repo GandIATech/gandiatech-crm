@@ -218,9 +218,82 @@ function initImport() {
   });
 }
 
+async function loadUpdates(force) {
+  const state = document.getElementById("updates-state");
+  const message = document.getElementById("updates-message");
+  const details = document.getElementById("updates-details");
+  const download = document.getElementById("updates-download");
+  const button = document.getElementById("updates-check");
+  if (!state || !message || !details || !download) return;
+
+  if (button) button.disabled = true;
+  message.textContent = "Consultando la última versión publicada…";
+  try {
+    const payload = await request(`/updates/check${force ? "?force=1" : ""}`);
+    const data = payload.data;
+    state.textContent = `Versión ${data.current}`;
+
+    if (!data.available) {
+      state.className = "badge bg-cream text-muted";
+      message.textContent = `Estás al día. La última versión publicada es la ${data.latest}.`;
+      if (data.warning) message.textContent += ` ${data.warning}`;
+      details.classList.add("hidden");
+      download.classList.add("hidden");
+      return;
+    }
+
+    state.className = "badge bg-accent-soft text-accent-dark";
+    state.textContent = `Nueva versión ${data.latest}`;
+    details.classList.remove("hidden");
+    const latest = document.getElementById("updates-latest");
+    if (latest) latest.textContent = `Nueva versión ${data.latest} disponible`;
+    const meta = [
+      `Tamaño: ${(Number(data.size) / 1024 / 1024).toFixed(1)} MB`,
+      `PHP mínimo: ${data.min_php}`,
+      `Esquema actual: ${data.current_db_version}${data.db_version ? ` · paquete: ${data.db_version}` : ""}`,
+    ];
+    if (data.checked_at) meta.push(`Comprobado ${relativeTime(data.checked_at)}`);
+    const metaLine = document.getElementById("updates-meta");
+    if (metaLine) metaLine.textContent = meta.join(" · ");
+
+    const changelog = document.getElementById("updates-changelog");
+    if (changelog) {
+      if (data.changelog_url) {
+        changelog.href = data.changelog_url;
+        changelog.classList.remove("hidden");
+      } else {
+        changelog.classList.add("hidden");
+      }
+    }
+
+    download.href = "/api/updates/download";
+    download.classList.remove("hidden");
+    message.textContent = data.php_ok
+      ? "Descarga el paquete verificado y sigue las instrucciones del README. Haz copia de seguridad antes de actualizar."
+      : `La nueva versión requiere PHP ${data.min_php}, pero este servidor usa ${data.current_php}. Actualiza PHP antes de instalar.`;
+    if (data.warning) message.textContent += ` ${data.warning}`;
+  } catch (error) {
+    state.className = "badge bg-cream text-muted";
+    message.textContent = error.message;
+    details.classList.add("hidden");
+    download.classList.add("hidden");
+    toast(error.message, "error");
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function initUpdates() {
+  const panel = document.getElementById("updates-panel");
+  if (!panel) return;
+  document.getElementById("updates-check")?.addEventListener("click", () => loadUpdates(true));
+  loadUpdates(false);
+}
+
 async function init() {
   await boot();
   initImport();
+  initUpdates();
 
   document.getElementById("trash-filter")?.addEventListener("change", (event) => {
     trashFilter = event.target.value;

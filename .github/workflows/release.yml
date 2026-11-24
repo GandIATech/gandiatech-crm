@@ -64,12 +64,14 @@ jobs:
           test -f "$ZIP"
           SHA=$(sha256sum "$ZIP" | awk '{print $1}')
           SIZE=$(stat -c%s "$ZIP")
+          DB_VERSION=$(ls database/migrations/*.sql 2>/dev/null | sed -E 's#.*/([0-9]{3,})_.*#\1#' | sort -n | tail -1)
+          DB_VERSION=$((10#${DB_VERSION:-1}))
           cat > dist/latest.json <<EOF
           {
             "version": "$VERSION",
             "tag": "$GITHUB_REF_NAME",
             "min_php": "8.2",
-            "db_version": 1,
+            "db_version": $DB_VERSION,
             "sha256": "$SHA",
             "size": $SIZE,
             "download_url": "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$(basename "$ZIP")",

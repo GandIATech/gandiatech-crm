@@ -4,7 +4,7 @@ declare(strict_types=1);
 define('BASE_PATH', dirname(__DIR__));
 
 /** Versión publicada de la aplicación. Debe coincidir con el tag del release. */
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.0.1');
 
 /**
  * Clave pública Ed25519 con la que se verifica la firma de latest.json.
@@ -12,6 +12,9 @@ define('APP_VERSION', '1.0.0');
  * (UPDATE_SIGNING_KEY), nunca en el repositorio ni en el servidor.
  */
 define('UPDATE_PUBLIC_KEY', 'zvxwJAuTH1JUP882GE7qQ49e1NjCvoUKAjLJqXKoTMk=');
+
+/** Manifiesto estable del último release publicado (incluye su firma .sig). */
+define('UPDATE_MANIFEST_URL', 'https://github.com/GandIATech/gandiatech-crm/releases/latest/download/latest.json');
 
 require BASE_PATH . '/vendor/autoload.php';
 

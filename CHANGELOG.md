@@ -4,6 +4,26 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-11-24
+
+### Añadido
+
+- Comprobador de actualizaciones en Configuración: consulta el último release,
+  verifica la firma Ed25519 y el SHA-256 del paquete, y permite descargar el ZIP
+  verificado desde el propio panel (solo administradores).
+- Sistema de migraciones numeradas con tabla `schema_migrations` y migración
+  `002` con índices para tareas por proyecto y horas por usuario.
+
+### Cambiado
+
+- `/api/health` expone la versión instalada de la aplicación.
+- El manifiesto `latest.json` publica la versión de esquema requerida.
+
+### Seguridad
+
+- La comprobación de actualizaciones usa una URL fija, exige HTTPS, limita el
+  tamaño de las respuestas y rechaza paquetes cuya firma o checksum no coincidan.
+
 ## [1.0.0] - 2026-11-24
 
 Primera versión pública.
@@ -33,4 +53,5 @@ Primera versión pública.
 - Purga en cascada de adjuntos al vaciar proyectos y leads de la papelera.
 - Migraciones idempotentes para actualizar instalaciones existentes.
 
+[1.0.1]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.0.1
 [1.0.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.0.0

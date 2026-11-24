@@ -117,6 +117,10 @@ try {
             require BASE_PATH . '/src/api/admin.php';
             handle_admin($method, $segments, $user);
             break;
+        case 'updates':
+            require BASE_PATH . '/src/api/updates.php';
+            handle_updates($method, $action, $user);
+            break;
         default:
             throw new HttpError('Recurso no encontrado.', 404);
     }

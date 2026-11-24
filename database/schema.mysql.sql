@@ -216,6 +216,12 @@ CREATE TABLE IF NOT EXISTS attachments (
     CONSTRAINT fk_attachments_user FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version INT UNSIGNED NOT NULL,
+    applied_at VARCHAR(32) NOT NULL,
+    PRIMARY KEY (version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS settings (
     `key` VARCHAR(100) NOT NULL,
     `value` TEXT NULL,
