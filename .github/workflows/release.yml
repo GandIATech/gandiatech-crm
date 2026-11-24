@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Empaquetar y publicar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar si el release ya existe
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "El release $GITHUB_REF_NAME ya existe; no se republica."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        if: steps.check.outputs.skip != 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, openssl, fileinfo, pdo, pdo_sqlite, sodium
+          coverage: none
+
+      - name: Verificar versión
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DECLARED=$(sed -n "s/^define('APP_VERSION', '\([^']*\)');/\1/p" src/bootstrap.php | head -1)
+          echo "Tag: $VERSION / APP_VERSION: $DECLARED"
+          if [ -z "$DECLARED" ] || [ "$DECLARED" != "$VERSION" ]; then
+            echo "::error::APP_VERSION ($DECLARED) no coincide con el tag ($VERSION)."
+            exit 1
+          fi
+
+      - name: Empaquetar
+        if: steps.check.outputs.skip != 'true'
+        run: ./empaquetar-distribucion.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Generar manifiesto
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ZIP="dist/gandiatech-crm-basico-$VERSION.zip"
+          test -f "$ZIP"
+          SHA=$(sha256sum "$ZIP" | awk '{print $1}')
+          SIZE=$(stat -c%s "$ZIP")
+          cat > dist/latest.json <<EOF
+          {
+            "version": "$VERSION",
+            "tag": "$GITHUB_REF_NAME",
+            "min_php": "8.2",
+            "db_version": 1,
+            "sha256": "$SHA",
+            "size": $SIZE,
+            "download_url": "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$(basename "$ZIP")",
+            "changelog_url": "https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md"
+          }
+          EOF
+          sha256sum "$ZIP" > "$ZIP.sha256"
+
+      - name: Firmar manifiesto
+        if: steps.check.outputs.skip != 'true'
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::Falta el secreto UPDATE_SIGNING_KEY. No se publican releases sin firma."
+            exit 1
+          fi
+          php -r '
+          $key = base64_decode(getenv("UPDATE_SIGNING_KEY"), true);
+          if ($key === false || strlen($key) !== SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
+              fwrite(STDERR, "Clave de firma no valida.\n");
+              exit(1);
+          }
+          $data = file_get_contents("dist/latest.json");
+          file_put_contents("dist/latest.json.sig", base64_encode(sodium_crypto_sign_detached($data, $key)) . "\n");
+          '
+
+      - name: Extraer notas del changelog
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag = 1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' CHANGELOG.md > dist/release-notes.md
+          if [ ! -s dist/release-notes.md ]; then
+            printf 'Release %s\n' "$VERSION" > dist/release-notes.md
+          fi
+
+      - name: Publicar release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/gandiatech-crm-basico-$VERSION.zip" \
+            "dist/gandiatech-crm-basico-$VERSION.zip.sha256" \
+            dist/latest.json \
+            dist/latest.json.sig \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "GandiaTech CRM $VERSION" \
+            --notes-file dist/release-notes.md
