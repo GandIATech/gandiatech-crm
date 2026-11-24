@@ -24,6 +24,16 @@ cp -R "$ROOT/database/." "$STAGE/database/"
 cp "$ROOT/config/.htaccess" "$STAGE/config/.htaccess"
 cp "$ROOT/data/.htaccess" "$STAGE/data/.htaccess"
 
+# Licencia, documentación y plantilla de configuración.
+for doc in LICENSE README.md CHANGELOG.md; do
+    if [ -f "$ROOT/$doc" ]; then
+        cp "$ROOT/$doc" "$STAGE/$doc"
+    fi
+done
+if [ -f "$ROOT/config/config.example.php" ]; then
+    cp "$ROOT/config/config.example.php" "$STAGE/config/config.example.php"
+fi
+
 # Reglas de Apache y documentación de la versión distribuible.
 cp "$ROOT/deploy-root.htaccess" "$STAGE/.htaccess"
 cp "$ROOT/deploy-router.php" "$STAGE/router.php"

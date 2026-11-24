@@ -20,7 +20,7 @@ $action = $id !== null ? ($segments[2] ?? null) : ($segments[1] ?? null);
 
 try {
     if ($resource === 'health') {
-        json_response(['status' => 'ok', 'time' => now_utc()]);
+        json_response(['status' => 'ok', 'version' => APP_VERSION, 'time' => now_utc()]);
     }
 
     if (!app_installed()) {

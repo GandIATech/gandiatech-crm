@@ -3,6 +3,16 @@ declare(strict_types=1);
 
 define('BASE_PATH', dirname(__DIR__));
 
+/** Versión publicada de la aplicación. Debe coincidir con el tag del release. */
+define('APP_VERSION', '1.0.0');
+
+/**
+ * Clave pública Ed25519 con la que se verifica la firma de latest.json.
+ * La clave privada correspondiente solo debe existir en GitHub Secrets
+ * (UPDATE_SIGNING_KEY), nunca en el repositorio ni en el servidor.
+ */
+define('UPDATE_PUBLIC_KEY', 'zvxwJAuTH1JUP882GE7qQ49e1NjCvoUKAjLJqXKoTMk=');
+
 require BASE_PATH . '/vendor/autoload.php';
 
 date_default_timezone_set('Europe/Madrid');

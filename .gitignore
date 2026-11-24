@@ -4,6 +4,9 @@
 # Informe interno de auditoría: incluye rutas locales y detalles de seguridad.
 /INFORME-SEGURIDAD-QA.md
 
+# Clave privada de firma de actualizaciones (solo para configurarla en GitHub).
+/data/update-signing.key
+
 # Datos locales, copias de seguridad y adjuntos subidos.
 /data/*.sqlite
 /data/*.sqlite-*
