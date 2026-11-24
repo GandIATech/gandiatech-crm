@@ -4,7 +4,7 @@ declare(strict_types=1);
 define('BASE_PATH', dirname(__DIR__));
 
 /** Versión publicada de la aplicación. Debe coincidir con el tag del release. */
-define('APP_VERSION', '1.0.3');
+define('APP_VERSION', '1.2.0');
 
 /**
  * Clave pública Ed25519 con la que se verifica la firma de latest.json.
@@ -82,6 +82,12 @@ function crm_base_path(): string
     static $base = null;
     if ($base !== null) {
         return $base;
+    }
+    // Con `php -S … router.php` SCRIPT_NAME es la ruta pedida, no la del script,
+    // así que no sirve para deducir la subcarpeta. En ese servidor el router
+    // siempre se lanza desde la raíz del paquete.
+    if (PHP_SAPI === 'cli-server') {
+        return $base = '';
     }
     $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     $dir = rtrim(str_replace('\\', '/', dirname($script)), '/');

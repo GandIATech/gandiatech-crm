@@ -8,7 +8,11 @@ declare(strict_types=1);
  *   php -S 0.0.0.0:8002 router.php
  */
 
+require_once __DIR__ . '/src/php-guard.php';
+crm_php_version_guard('8.2', false);
+
 require_once __DIR__ . '/src/Security.php';
+require_once __DIR__ . '/src/bootstrap.php';
 Security::headers();
 
 $root = __DIR__;
@@ -26,7 +30,7 @@ if ($path === '/api' || str_starts_with($path, '/api/')) {
     return true;
 }
 
-$installed = is_file($root . '/config/config.php');
+$installed = app_installed();
 
 if ($path === '/install' || str_starts_with($path, '/install/')) {
     $installerFile = $root . '/install/index.php';
@@ -35,7 +39,7 @@ if ($path === '/install' || str_starts_with($path, '/install/')) {
         return true;
     }
     if ($installed) {
-        header('Location: /app/', true, 302);
+        header('Location: ' . crm_url('/app/'), true, 302);
         return true;
     }
     http_response_code(404);
@@ -47,13 +51,13 @@ if ($path === '/install' || str_starts_with($path, '/install/')) {
 if (!$installed) {
     $isAsset = preg_match('#^/app/(?:_astro/|[^/]+\.(?:css|js|png|svg|ico|webp|jpg|jpeg|woff2?))$#i', $path);
     if (!$isAsset) {
-        header('Location: /install/', true, 302);
+        header('Location: ' . crm_url('/install/'), true, 302);
         return true;
     }
 }
 
 if ($path === '/' || $path === '/app') {
-    header('Location: /app/', true, 302);
+    header('Location: ' . crm_url('/app/'), true, 302);
     return true;
 }
 

@@ -4,6 +4,71 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.2.0] - 2026-11-24
+
+### Añadido
+
+- Importación de CSV en **Contactos** y **Leads**: se elige el archivo, se revisa
+  una vista previa con las primeras filas y se indica qué columna corresponde a
+  cada campo de la base de datos (con propuesta automática según los encabezados).
+- La importación admite separadores `;`, `,` y tabulador, archivos en UTF-8 o
+  Windows-1252, importes con formato español (`1.234,50`) y fechas `d/m/Y` o
+  `Y-m-d`.
+- En contactos se puede omitir o actualizar los que ya existen por correo; en
+  leads se asigna el estado por nombre (con aviso si no existe) y se vincula el
+  contacto por su correo.
+- En contactos, si el nombre y los apellidos vienen en columnas separadas se
+  mapea «Nombre» y «Apellidos» y se guardan unidos en el nombre del contacto;
+  la columna de apellidos se detecta automáticamente.
+- Cada importación deja una actividad resumen y muestra al final los registros
+  creados, actualizados, omitidos y las incidencias por línea.
+- El límite es de 5 MB y 5.000 filas por archivo, con un máximo de 20 incidencias
+  por respuesta; la escritura se hace en una única transacción.
+
+### Cambiado
+
+- La importación de contactos de Configuración usa el mismo motor que la de
+  Contactos, de modo que ambas comparten validaciones y mapeo de columnas.
+
+### Corregido
+
+- Con el servidor de desarrollo (`php -S … router.php`) la raíz se calculaba a
+  partir de la ruta pedida, lo que rompía el inicio de sesión, la ruta de la
+  cookie y las redirecciones al instalador (`/app/install/`). Ahora, en ese
+  servidor la raíz del CRM es siempre la del paquete.
+
+## [1.1.0] - 2026-11-24
+
+### Añadido
+
+- El asistente comprueba el entorno **antes** de instalar: versión de PHP y SAPI,
+  extensiones obligatorias y recomendadas, controladores PDO disponibles,
+  permisos reales de escritura (con archivo de prueba), límites de subida y
+  memoria, sesiones, reescritura de URLs, HTTPS, `.htaccess` y estado del
+  paquete. Cada punto muestra lo detectado y cómo corregirlo; los bloqueantes
+  desactivan «Continuar» y se vuelven a validar al enviar la instalación.
+- Desplegable con los datos técnicos (rutas, raíz del documento, URL detectada)
+  para copiar en un soporte.
+- Guardia de versión de PHP en instalador, API, índice raíz y router: con un PHP
+  antiguo se muestra una página (o un JSON) explicativa con la versión detectada
+  en lugar de un error 500.
+- El paquete de dominio incorpora `index.php` como front controller de la raíz,
+  compartido con el paquete de subcarpeta.
+- El asistente solo ofrece los controladores de base de datos disponibles.
+
+### Cambiado
+
+- El `.htaccess` del paquete de dominio ya no decide si el CRM está instalado con
+  `%{DOCUMENT_ROOT}`: `/install/` siempre entra al asistente, que indica si ya
+  hay configuración.
+- El instalador se divide en `install/index.php` (compatible con PHP antiguo) e
+  `install/instalar.php` (asistente).
+- `router.php` carga el bootstrap y usa `app_installed()` y `crm_url()` para las
+  redirecciones.
+- Guía de instalación: requisitos ajustados (`mbstring` y `sodium` recomendadas),
+  nuevo paso de entorno, pruebas locales con `php -S … router.php` y tabla de
+  problemas actualizada.
+
 ## [1.0.3] - 2026-11-24
 
 ### Añadido

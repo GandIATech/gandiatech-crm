@@ -34,8 +34,9 @@ if [ -f "$ROOT/config/config.example.php" ]; then
     cp "$ROOT/config/config.example.php" "$STAGE/config/config.example.php"
 fi
 
-# Reglas de Apache y documentación de la versión distribuible.
+# Reglas de Apache, front controller y router de desarrollo.
 cp "$ROOT/deploy-root.htaccess" "$STAGE/.htaccess"
+cp "$ROOT/deploy-index.php" "$STAGE/index.php"
 cp "$ROOT/deploy-router.php" "$STAGE/router.php"
 if [ -f "$ROOT/LEEME-INSTALACION.md" ]; then
     cp "$ROOT/LEEME-INSTALACION.md" "$STAGE/LEEME.md"

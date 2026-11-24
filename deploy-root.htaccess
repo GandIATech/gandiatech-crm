@@ -10,24 +10,17 @@ AddDefaultCharset UTF-8
     # Carpetas privadas: nunca se sirven por HTTP.
     RewriteRule ^(?:src|vendor|config|data|database)(?:/|$) - [F,L,NC]
 
-    # Instalador. Si ya existe configuración, redirige al CRM.
-    RewriteCond %{DOCUMENT_ROOT}/config/config.php -f
-    RewriteRule ^install(?:/.*)?$ /app/ [R=302,L]
-    RewriteRule ^install/?$ install/index.php [L,QSA]
+    # Instalador. Si ya hay configuración, la propia página lo indica.
+    RewriteRule ^install(?:/.*)?$ install/index.php [L,QSA]
 
     # API: /api y /api/* -> api/index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^api(?:/.*)?$ api/index.php [L,QSA]
 
-    # Mientras no exista config/config.php, el frontend va al instalador.
-    RewriteCond %{DOCUMENT_ROOT}/config/config.php !-f
-    RewriteCond %{REQUEST_URI} !^/install
-    RewriteCond %{REQUEST_URI} !^/api
-    RewriteCond %{REQUEST_URI} !\.(?:css|js|png|svg|ico|webp|jpg|jpeg|woff2?)$ [NC]
-    RewriteRule ^ /install/ [R=302,L]
-
-    # La raíz del CRM entra por el frontend.
-    RewriteRule ^$ app/ [R=302,L]
+    # La raíz la resuelve index.php: decide entre la aplicación y el instalador
+    # con rutas reales de PHP. No se usa %{DOCUMENT_ROOT} porque en algunos
+    # hostings no coincide con la ruta del cliente FTP.
+    RewriteRule ^$ index.php [L]
     RewriteRule ^app$ app/ [R=302,L]
 
     # Archivos y directorios reales.

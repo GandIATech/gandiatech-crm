@@ -171,56 +171,11 @@ ErrorDocument 404 $BASE/app/404.html
 </IfModule>
 HTACCESS
 
-# Punto de entrada de la raiz. Decide entre la app y el instalador usando
-# rutas reales de PHP, sin depender de %{DOCUMENT_ROOT}.
-cat > "$OUT/index.php" <<'PHP'
-<?php
-declare(strict_types=1);
-
-require __DIR__ . '/src/bootstrap.php';
-
-if (app_installed()) {
-    header('Location: ' . crm_url('/app/'), true, 302);
-    exit;
-}
-
-if (is_dir(__DIR__ . '/install')) {
-    header('Location: ' . crm_url('/install/'), true, 302);
-    exit;
-}
-
-http_response_code(503);
-header('Content-Type: text/html; charset=utf-8');
-header('Cache-Control: no-store');
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>CRM sin instalar · GandiaTech CRM</title>
-<style>
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#FBF9F5;color:#1F1B16;
-font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}
-main{max-width:520px}
-h1{font-size:1.5rem;margin:0 0 .75rem}
-p{line-height:1.6;margin:0 0 1rem}
-code{background:#EFEAE1;border-radius:4px;padding:.1em .35em}
-</style>
-</head>
-<body>
-<main>
-<h1>El CRM todavía no está instalado</h1>
-<p>No se pudo cargar <code>config/config.php</code> y la carpeta
-<code>install/</code> ya no está disponible, así que no hay nada que abrir.</p>
-<p>Si la configuración existe, revisa que el fichero sea legible por PHP
-(permisos <code>644</code>). Si no existe, vuelve a subir <code>install/</code>
-a la carpeta del CRM y recarga esta página para completar la instalación.</p>
-</main>
-</body>
-</html>
-PHP
+# Punto de entrada de la raiz. Es el mismo front controller que usa el paquete
+# de dominio: decide entre la app y el instalador con rutas reales de PHP, sin
+# depender de %{DOCUMENT_ROOT} (que en algunos hostings no coincide con la ruta
+# del cliente FTP y dejaba la app atrapada en /install/).
+cp "$ROOT/deploy-index.php" "$OUT/index.php"
 
 cat > "$OUT/LEEME-SUBCARPETA.md" <<LEEME
 # GandiaTech CRM en una subcarpeta ($BASE)
@@ -235,10 +190,14 @@ hosting tradicional con Apache + PHP 8.2 o superior (IONOS, Raiola, Cdmon…).
    \`vendor/\`, \`database/\`, \`config/\`, \`data/\` y los documentos.
 2. Da permiso de escritura a \`config/\` y \`data/\` (por ejemplo \`755\` o \`775\`).
 3. Selecciona PHP 8.2 o superior en el panel del hosting.
-4. Abre \`https://tu-dominio.com$BASE/\`: te llevará al instalador.
-   El instalador crea \`config/config.php\` y la base de datos (SQLite por
+4. Abre \`https://tu-dominio.com$BASE/\`: te llevará al instalador. El primer
+   paso comprueba el entorno (versión de PHP, extensiones, permisos de
+   escritura y reglas de Apache) y explica cómo corregir lo que falte antes
+   de tocar nada. Si la versión de PHP es antigua verás una página con la
+   versión detectada, no un error 500.
+5. El instalador crea \`config/config.php\` y la base de datos (SQLite por
    defecto) y se borra solo al terminar.
-5. Entra en \`https://tu-dominio.com$BASE/app/\` con el usuario administrador.
+6. Entra en \`https://tu-dominio.com$BASE/app/\` con el usuario administrador.
 
 ## Si la subcarpeta tiene otro nombre
 

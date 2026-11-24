@@ -4,6 +4,7 @@ import { boot, currentUser, request, upload } from "./crm-extras.js";
 
 const FIELD_LABELS = {
   name: "Nombre *",
+  name_secondary: "Apellidos (se une al nombre)",
   email: "Correo",
   phone: "Teléfono",
   company: "Empresa",
@@ -12,6 +13,7 @@ const FIELD_LABELS = {
 
 const HEADER_HINTS = {
   name: ["nombre", "name", "contacto", "cliente"],
+  name_secondary: ["apellidos", "apellido", "surname", "lastname"],
   email: ["correo", "email", "e-mail", "mail"],
   phone: ["telefono", "teléfono", "phone", "movil", "móvil"],
   company: ["empresa", "company", "organizacion", "organización"],
@@ -188,7 +190,7 @@ function initImport() {
         mappingData[select.dataset.mapField] = Number(select.value);
       }
     });
-    if (mappingData.name === undefined) {
+    if (mappingData.name === undefined && mappingData.name_secondary === undefined) {
       toast("Indica qué columna contiene el nombre.", "error");
       return;
     }

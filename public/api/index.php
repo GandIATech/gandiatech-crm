@@ -1,11 +1,20 @@
 <?php
 declare(strict_types=1);
 
+// Si el servidor usa un PHP antiguo, la API responde con un error explicativo
+// en lugar de un 500 sin información.
+$crmGuard = dirname(__DIR__) . '/src/php-guard.php';
+if (!is_file($crmGuard)) {
+    $crmGuard = dirname(__DIR__, 2) . '/src/php-guard.php';
+}
+require_once $crmGuard;
+crm_php_version_guard('8.2', true);
+
 $basePath = dirname(__DIR__);
 if (!is_file($basePath . '/src/bootstrap.php')) {
     $basePath = dirname(__DIR__, 2);
 }
-require $basePath . '/src/bootstrap.php';
+require_once $basePath . '/src/bootstrap.php';
 
 Security::headers();
 
@@ -56,7 +65,7 @@ try {
     require BASE_PATH . '/src/api/_shared.php';
 
     if (in_array($resource, ['leads', 'contacts', 'projects', 'tasks', 'users', 'lead-statuses', 'time-entries', 'task-templates'], true)
-        && $id === null && $action !== null) {
+        && $id === null && $action !== null && $action !== 'import') {
         throw new HttpError('Recurso no encontrado.', 404);
     }
 
@@ -74,10 +83,18 @@ try {
             handle_dashboard();
             break;
         case 'leads':
+            if ($id === null && $action === 'import') {
+                require BASE_PATH . '/src/api/import.php';
+                handle_import($method, 'leads', $user);
+            }
             require BASE_PATH . '/src/api/leads.php';
             handle_leads($method, $id, $action, $user);
             break;
         case 'contacts':
+            if ($id === null && $action === 'import') {
+                require BASE_PATH . '/src/api/import.php';
+                handle_import($method, 'contacts', $user);
+            }
             require BASE_PATH . '/src/api/contacts.php';
             handle_contacts($method, $id, $user);
             break;

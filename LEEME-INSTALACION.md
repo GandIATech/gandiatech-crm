@@ -8,6 +8,7 @@ apartado **Actualizar una instalación existente**.
 
 ```
 .htaccess        Reglas de Apache (seguridad, rutas y cabeceras)
+index.php        Punto de entrada de la raíz: decide entre la app y el instalador
 router.php       Router para el servidor embebido de PHP (solo desarrollo/pruebas)
 app/             Interfaz web (HTML, CSS y JavaScript ya compilados)
 api/             Front controller de la API
@@ -27,11 +28,12 @@ LICENSE          Licencia MIT
 ## 2. Requisitos
 
 - **PHP 8.2 o superior** (no funciona con 8.1 ni anteriores).
-- Extensiones obligatorias: `pdo`, `openssl`, `mbstring`, `fileinfo` y `session`.
+- Extensiones obligatorias: `pdo`, `openssl`, `fileinfo`, `session` y `json`.
+- Extensiones recomendadas: `mbstring` (acentos y mayúsculas en nombres y
+  búsquedas) y `sodium` (verificación de la firma de las actualizaciones, sin
+  ella el comprobador del panel queda desactivado).
 - Motor de base de datos: `pdo_sqlite` (opción por defecto, no requiere nada más)
   o `pdo_mysql` para MySQL/MariaDB 5.7+ / 10.3+.
-- `sodium` recomendado: sin esta extensión, el comprobador de actualizaciones del
-  panel no puede verificar la firma del paquete y queda desactivado.
 - Apache con `mod_rewrite` (se incluye `.htaccess`) o Nginx.
 - Permisos de escritura para el usuario de PHP en `config/` durante la
   instalación y en `data/` de forma permanente.
@@ -49,9 +51,10 @@ php -m | grep -Ei 'pdo|sqlite|mysql|openssl|mbstring|fileinfo|sodium'
 2. Sube el **contenido** de `gandiatech-crm-basico-X.Y.Z/` (no la carpeta) a la
    raíz del dominio o subdominio, por FTP/SFTP o con el gestor de archivos del
    hosting.
-3. La instalación está pensada para la **raíz de un dominio o subdominio**. Si la
-   colocas en una subcarpeta, tendrás que ajustar `RewriteBase` y las redirecciones
-   de `.htaccess` (ver *Problemas frecuentes*).
+3. La instalación está pensada para la **raíz de un dominio o subdominio**. Para
+   publicarla en una subcarpeta (`/crm`, `/apps/crm`…), genera el paquete con
+   `./empaquetar-subcarpeta.sh /crm` desde el repositorio: reescribe las URLs del
+   frontend, el `.htaccess` y añade `LEEME-SUBCARPETA.md`.
 
 ### Permisos recomendados
 
@@ -68,19 +71,36 @@ usuario que ejecuta PHP.
 
 ## 4. Ejecutar el asistente
 
-1. Abre `https://tu-dominio/install/`. Mientras no exista `config/config.php`, la
-   raíz redirige automáticamente ahí.
-2. **Paso 1 — Base de datos**
+1. Abre `https://tu-dominio/install/` (o `https://tu-dominio/crm/install/` si el
+   CRM está en una subcarpeta). Mientras no exista `config/config.php`, la raíz
+   redirige automáticamente ahí.
+2. **Paso 1 — Entorno.** El asistente mide el servidor antes de tocar nada:
+   versión de PHP, extensiones cargadas, permisos reales de escritura en
+   `config/` y `data/`, límites de subida y memoria, reescritura de URLs y
+   estado de HTTPS. Cada punto aparece con un icono:
+   - **verde**: correcto;
+   - **ámbar**: aviso, se puede instalar pero conviene revisarlo;
+   - **rojo**: bloqueante, y el botón *Continuar* queda desactivado.
+
+   Cuando algo está en rojo, el propio aviso explica cómo resolverlo (panel del
+   hosting, `php.ini`, permisos o reglas del servidor). Tras corregirlo, pulsa
+   *Volver a comprobar*. El desplegable **Datos técnicos** reúne versión, rutas y
+   contexto del servidor para copiarlo en un soporte.
+
+   Si el servidor no cumple la versión mínima de PHP, no verás un error 500: la
+   aplicación muestra una página con la versión detectada y cómo cambiarla.
+3. **Paso 2 — Base de datos.** Solo se ofrecen los controladores disponibles en
+   el servidor.
    - *SQLite*: no hay que configurar nada; el fichero se crea en
      `data/crm.sqlite`. Puedes indicar otra ruta relativa dentro de la instalación.
    - *MySQL/MariaDB*: introduce host, puerto, nombre de la base de datos, usuario y
      contraseña. Crea antes la base de datos y un usuario con permisos sobre ella
      (por ejemplo con `utf8mb4_unicode_ci`). El asistente prueba la conexión antes
      de continuar.
-3. **Paso 2 — Empresa y administrador**: nombre de la empresa, nombre, correo y
+4. **Paso 3 — Empresa y administrador**: nombre de la empresa, nombre, correo y
    contraseña del administrador. La contraseña debe tener **entre 12 y 72
    caracteres** y no puede contener el correo ni el nombre del usuario.
-4. **Paso 3 — Instalar**: se crean las tablas, el usuario administrador y la
+5. **Paso 4 — Instalar**: se crean las tablas, el usuario administrador y la
    configuración.
 
 Al terminar, el instalador **borra su propia carpeta** `install/`. Si por
@@ -88,6 +108,19 @@ permisos no pudo hacerlo, elimínala tú por FTP: dejarla accesible no permite
 reinstalar (la configuración ya existe), pero no aporta nada.
 
 Accede al CRM en `https://tu-dominio/app/`.
+
+### Probar en local con `php -S`
+
+```bash
+cd gandiatech-crm-basico-X.Y.Z
+php -S 127.0.0.1:8002 router.php
+```
+
+Abre `http://127.0.0.1:8002/install/`. El router reproduce las reglas de
+`.htaccess`; sin él (`php -S` apuntando directamente a la carpeta), `/api/…` y
+las rutas de la app no funcionan. El paso de entorno detecta el servidor
+embebido y avisa si no se está usando el router. En local, el aviso de HTTPS es
+normal y no bloquea la instalación.
 
 ## 5. Comprobar que la instalación es correcta
 
@@ -182,10 +215,12 @@ acepta paquetes cuya firma y checksum coincidan.
 
 | Síntoma | Causa habitual | Solución |
 | --- | --- | --- |
-| Error 500 al abrir `/install/` | PHP < 8.2 o falta una extensión | Revisa `php -v` y `php -m`; activa `pdo_sqlite`/`pdo_mysql`, `mbstring`, `fileinfo`, `openssl` |
+| Página «Este servidor usa una versión de PHP demasiado antigua» | PHP < 8.2 | Cambia la versión de PHP del dominio en el panel del hosting (o `apt install php8.2`) |
+| Error 500 al abrir `/install/` | Falta una extensión o un archivo del paquete | Revisa el paso *Entorno* del asistente: indica el punto exacto que falla |
+| Un punto en rojo en el paso *Entorno* | Requisito del servidor sin cumplir | Sigue las instrucciones que aparecen bajo el aviso y pulsa *Volver a comprobar* |
 | «No se pudo escribir config/config.php» | `config/` sin permisos de escritura | `chmod 775 config` y comprueba el propietario |
 | «La carpeta ... no tiene permisos de escritura» | `data/` no escribible | `chmod 775 data` y `data/uploads` |
-| La raíz redirige siempre a `/install/` | No se creó `config/config.php` | Repite el asistente o crea la configuración manualmente |
+| La raíz redirige siempre a `/install/` | No se creó `config/config.php` | Repite el asistente o crea la configuración manualmente. El `index.php` decide con rutas reales de PHP, así que no depende de `%{DOCUMENT_ROOT}` |
 | `/install/` redirige a `/app/` | Ya hay configuración | Es el comportamiento normal; elimina `install/` si quedó |
 | Error 404 en `/api/...` | `mod_rewrite` desactivado | Actívalo en Apache o usa el bloque Nginx de arriba |
 | CSS o JS no cargan en una subcarpeta | `RewriteBase /` no coincide | Ajusta `RewriteBase` y las redirecciones de `.htaccess`, o instala en un subdominio |
