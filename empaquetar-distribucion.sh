@@ -25,7 +25,7 @@ cp "$ROOT/config/.htaccess" "$STAGE/config/.htaccess"
 cp "$ROOT/data/.htaccess" "$STAGE/data/.htaccess"
 
 # Licencia, documentación y plantilla de configuración.
-for doc in LICENSE README.md CHANGELOG.md; do
+for doc in LICENSE README.md CHANGELOG.md SECURITY.md; do
     if [ -f "$ROOT/$doc" ]; then
         cp "$ROOT/$doc" "$STAGE/$doc"
     fi
