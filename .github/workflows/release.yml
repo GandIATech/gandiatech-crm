@@ -116,6 +116,31 @@ jobs:
           file_put_contents("dist/latest.json.sig", base64_encode(sodium_crypto_sign_detached($data, $key)) . "\n");
           '
 
+      - name: Verificar manifiesto firmado
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          php -r '
+          $boot = file_get_contents("src/bootstrap.php");
+          if (!preg_match("/define\\(\x27UPDATE_PUBLIC_KEY\x27, \x27([^\x27]+)\x27\\)/", $boot, $match)) {
+              fwrite(STDERR, "No se encontró UPDATE_PUBLIC_KEY.\n");
+              exit(1);
+          }
+          $publicKey = base64_decode($match[1], true);
+          $signature = base64_decode(trim(file_get_contents("dist/latest.json.sig")), true);
+          $manifestJson = file_get_contents("dist/latest.json");
+          if ($publicKey === false || $signature === false
+              || !sodium_crypto_sign_verify_detached($signature, $manifestJson, $publicKey)) {
+              fwrite(STDERR, "La firma no coincide con UPDATE_PUBLIC_KEY.\n");
+              exit(1);
+          }
+          $manifest = json_decode($manifestJson, true);
+          if (!is_array($manifest) || getenv("GITHUB_REF_NAME") !== "v" . ($manifest["version"] ?? "")) {
+              fwrite(STDERR, "La versión del manifiesto no coincide con el tag.\n");
+              exit(1);
+          }
+          echo "Firma y versión del manifiesto correctas.\n";
+          '
+
       - name: Extraer notas del changelog
         if: steps.check.outputs.skip != 'true'
         run: |

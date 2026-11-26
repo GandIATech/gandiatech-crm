@@ -4,7 +4,7 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [1.4.0] - 2026-11-26
 
 ### Añadido
 
@@ -14,10 +14,21 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   datos, aplica las migraciones y comprueba el resultado. Si falla, restaura los
   ficheros anteriores.
 - Inventario firmado de ficheros por release y generación automática de deltas
-  acumulados desde las últimas seis etiquetas. Las versiones antiguas usan el
+  acumulados desde las últimas doce etiquetas. Las versiones antiguas usan el
   paquete completo como respaldo.
 - Modo mantenimiento breve durante la copia y detección de ficheros modificados
   localmente antes de sobrescribirlos.
+
+### Corregido
+
+- La verificación de una actualización delta ya no falla por ficheros locales
+  modificados que no forman parte del paquete que se está aplicando.
+
+### Notas de actualización
+
+- Si tu instalación 1.3.0 no muestra el botón **Actualizar ahora**, instala esta
+  versión una vez de forma manual. A partir de la 1.4.0 el motor queda en el
+  servidor y las siguientes versiones se pueden aplicar desde Configuración.
 
 ## [1.3.0] - 2026-11-26
 
@@ -200,6 +211,7 @@ Primera versión pública.
 - Purga en cascada de adjuntos al vaciar proyectos y leads de la papelera.
 - Migraciones idempotentes para actualizar instalaciones existentes.
 
+[1.4.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.4.0
 [1.3.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.3.0
 [1.0.1]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.0.1
 [1.0.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.0.0
