@@ -71,6 +71,11 @@ function zipDirectory(string $source, string $target): void
     if (is_file($target)) {
         @unlink($target);
     }
+    // El ZIP se crea después de cambiar a la carpeta de origen; la ruta de
+    // salida debe ser absoluta o se resolvería dentro de esa carpeta temporal.
+    if (!str_starts_with($target, '/')) {
+        $target = getcwd() . '/' . $target;
+    }
     $command = 'cd ' . escapeshellarg($source) . ' && zip -qr ' . escapeshellarg($target) . ' .';
     $output = [];
     $status = 0;
