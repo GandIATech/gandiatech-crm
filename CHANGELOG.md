@@ -4,6 +4,25 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Cambiado
+
+- El avance de un proyecto con tareas se calcula a partir de las tareas
+  completadas (`completadas / total`). Si el proyecto no tiene tareas se
+  mantiene el valor manual guardado. La API devuelve `progress_mode`
+  (`auto` o `manual`) y el formulario deshabilita el control de avance en modo
+  automático. Los datos guardados no se migran: el valor manual se conserva y
+  vuelve a aplicarse si el proyecto se queda sin tareas.
+
+### Corregido
+
+- La interacción recién guardada en la ficha de un lead muestra el tipo, la
+  descripción y la fecha en el historial inmediato, sin necesidad de reabrir la
+  ficha.
+- La exportación CSV de proyectos usa el mismo criterio de avance que la ficha
+  y el listado.
+
 ## [1.2.0] - 2026-11-24
 
 ### Añadido

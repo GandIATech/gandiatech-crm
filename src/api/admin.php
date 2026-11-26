@@ -181,7 +181,9 @@ function export_projects_rows(PDO $pdo): array
 
     $stmt = $pdo->prepare(
         'SELECT p.*, c.name AS contact_name, l.title AS lead_title, u.name AS owner_name,
-                (SELECT COALESCE(SUM(te.hours), 0) FROM time_entries te WHERE te.project_id = p.id) AS hours_logged
+                (SELECT COALESCE(SUM(te.hours), 0) FROM time_entries te WHERE te.project_id = p.id) AS hours_logged,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.deleted_at IS NULL) AS tasks_total,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = \'completada\' AND t.deleted_at IS NULL) AS tasks_done
          FROM projects p
          LEFT JOIN contacts c ON c.id = p.contact_id
          LEFT JOIN leads l ON l.id = p.lead_id
@@ -198,7 +200,7 @@ function export_projects_rows(PDO $pdo): array
             number_format((float) $row['budgeted_hours'], 2, ',', ''),
             number_format((float) $row['hours_logged'], 2, ',', ''),
             $row['owner_name'] ?? '', $row['start_date'] ?? '', $row['end_date'] ?? '',
-            (int) $row['progress'], $row['description'] ?? '',
+            project_progress($row)['progress'], $row['description'] ?? '',
         ];
     }
 

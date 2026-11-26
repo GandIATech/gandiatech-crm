@@ -9,7 +9,7 @@ Basado en la auditoría funcional del 25/11/2026 (hallazgos H01–H06).
 ## Estado de ejecución (26/11/2026)
 
 Referencia: commit `705760f`, que incorpora este plan y el informe de auditoría.
-Solo se han ejecutado las tareas que no alteran el comportamiento de la aplicación.
+Primero se ejecutaron solo las tareas sin impacto funcional; después se aplicaron H03 y H02 (regla D2) con autorización expresa.
 
 **Ejecutado**
 
@@ -17,14 +17,18 @@ Solo se han ejecutado las tareas que no alteran el comportamiento de la aplicaci
   `data/crm.sqlite.bak-auditoria-2026-11-25` (excluida de git).
 - Fase 0 · Arranque local verificado con `php -S 127.0.0.1:8002 router.php`:
   `/app/` responde 200 y `/api/meta` devuelve el 401 JSON esperado sin sesión.
-- Fase 4 · H03 **sigue abierto**. La inspección inicial lo daba por corregido,
-  pero al contrastar con `public/app/_astro/ui.CJdB5Grl.js` se confirma que
-  `request()` devuelve `{ data, meta }` y el render inmediato de
-  `leads-extras.js` lee `activity.type`, `activity.description` y
-  `activity.date` directamente del sobre. Al no existir esas claves, pinta
-  «Interacción:» sin descripción y la fecha como «—»: coincide con el síntoma
-  del informe. El servidor sí devuelve los tres campos
-  (`src/api/leads.php:52-58`). No probado en navegador.
+- Fase 4 · H03 **parcheado**: el render inmediato de `leads-extras.js`
+  desempaqueta ahora la respuesta (`const { data: activity }`). La causa era
+  que `request()` devuelve `{ data, meta }` y el código leía `activity.type`
+  del sobre. Verificado que el contrato y el render usan las mismas claves;
+  **falta la prueba en navegador** con una sesión real.
+- Fase 2 · H02 **implementado con D2**: nuevo helper `project_progress()` en
+  `src/api/_shared.php`; el listado, la ficha, el CSV y el `PATCH` lo aplican.
+  Verificado con el servidor local sobre una copia aislada de la base de datos:
+  1 de 4 tareas → 25 % en ficha y listado; proyecto sin tareas conserva el
+  avance manual (70 %); `PATCH` de avance ignorado mientras haya tareas;
+  reabrir la tarea vuelve a 0 %. El formulario deshabilita el control en modo
+  automático y la ficha indica el modo. **No probado en navegador.**
 - Fase 8 · Revisado `.gitignore`: la base de datos, los logs, los adjuntos y
   `dist/` ya quedaban fuera; se añade el patrón `/data/*.sqlite.bak-*` para las
   copias de seguridad. El script de empaquetado no incluye datos ni logs.
@@ -42,11 +46,9 @@ Solo se han ejecutado las tareas que no alteran el comportamiento de la aplicaci
 
 **No ejecutado (afecta a funcionalidad o requiere una decisión previa)**
 
-- Fases 1, 2, 3, 5 y 6: H01, H02, H04, H05 y H06 implican cambios de
-  comportamiento o parches en bundles compilados. Quedan pendientes dentro del
-  alcance funcional del plan.
-- Fase 4: H03 está diagnosticado (respuesta sin desempaquetar) pero no
-  parcheado, porque la corrección altera el renderizado del historial.
+- Fases 1, 3, 5 y 6: H01, H04, H05 y H06 implican cambios de comportamiento o
+  parches en bundles compilados. Quedan pendientes dentro del alcance funcional
+  del plan.
 - Fase 0: no se crea la rama `fix/auditoria-2026-11-25` porque no hay cambios
   funcionales que aislar; el login con dos roles y los datos `QA-FIX` tampoco se
   han creado, ya que requieren credenciales y modifican la base de trabajo.

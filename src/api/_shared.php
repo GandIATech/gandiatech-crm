@@ -101,6 +101,27 @@ function lead_full(int $id, ?array $user = null): array
     return $lead;
 }
 
+function project_progress(array $project): array
+{
+    $total = (int) ($project['tasks_total'] ?? 0);
+    $done = (int) ($project['tasks_done'] ?? 0);
+    if ($total > 0) {
+        return [
+            'progress' => (int) round($done / $total * 100),
+            'progress_mode' => 'auto',
+        ];
+    }
+    return [
+        'progress' => max(0, min(100, (int) ($project['progress'] ?? 0))),
+        'progress_mode' => 'manual',
+    ];
+}
+
+function project_with_progress(array $project): array
+{
+    return array_merge($project, project_progress($project));
+}
+
 function project_full(int $id, ?array $user = null): array
 {
     $sql = "SELECT p.*, c.name AS contact_name, c.company AS contact_company,
@@ -124,7 +145,7 @@ function project_full(int $id, ?array $user = null): array
     if (!$project) {
         throw new HttpError('Proyecto no encontrado.', 404);
     }
-    return $project;
+    return project_with_progress($project);
 }
 
 function task_full(int $id, ?array $user = null): array

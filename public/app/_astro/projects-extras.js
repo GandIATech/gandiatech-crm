@@ -4,6 +4,16 @@ import { boot, currentUser, mountAttachments, observeDialogs, request } from "./
 
 let templates = null;
 let meta = null;
+let activeProject = null;
+
+function progressHint(project) {
+  if (!project) return "";
+  const total = Number(project.tasks_total) || 0;
+  const done = Number(project.tasks_done) || 0;
+  return project.progress_mode === "auto"
+    ? `Calculado por tareas: ${done} de ${total} completadas.`
+    : "Avance manual: el proyecto no tiene tareas.";
+}
 
 function localToday() {
   const now = new Date();
@@ -160,7 +170,20 @@ function enhanceProjectDialog(dialog) {
   const refresh = async () => {
     try {
       const data = await request(`/projects/${projectId}`);
+      activeProject = data.data.project ?? null;
       const time = data.data.time ?? {};
+      const progressLabel = Array.from(body.querySelectorAll("span")).find(
+        (label) => label.textContent.trim() === "Avance del proyecto"
+      );
+      const progressBlock = progressLabel?.parentElement?.parentElement;
+      if (progressBlock) {
+        progressBlock.querySelector("[data-progress-mode]")?.remove();
+        const hint = document.createElement("p");
+        hint.className = "mt-1.5 text-[10px] text-muted";
+        hint.dataset.progressMode = "1";
+        hint.textContent = progressHint(activeProject);
+        progressBlock.appendChild(hint);
+      }
       renderProfitability(profitBox, time);
       const entries = data.data.time_entries ?? [];
       timeList.innerHTML = "";
@@ -277,6 +300,23 @@ function enhanceProjectForm(dialog) {
   const select = dialog.querySelector("#project-template");
   if (!form || !select || select.dataset.loaded) return;
   select.dataset.loaded = "1";
+
+  const isEdit = dialog.textContent.includes("Editar proyecto");
+  const project = isEdit ? activeProject : null;
+  const slider = dialog.querySelector("#project-progress");
+  const output = dialog.querySelector("#progress-output");
+  if (slider && project) {
+    slider.value = String(Number(project.progress) || 0);
+    if (output) output.textContent = `${Number(project.progress) || 0}%`;
+    if (project.progress_mode === "auto") {
+      slider.disabled = true;
+      slider.classList.add("opacity-50", "cursor-not-allowed");
+      const hint = document.createElement("p");
+      hint.className = "mt-1 text-[10px] text-muted";
+      hint.textContent = progressHint(project);
+      slider.insertAdjacentElement("afterend", hint);
+    }
+  }
   loadTemplates().then((rows) => {
     select.innerHTML =
       '<option value="">Sin plantilla</option>' +

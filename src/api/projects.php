@@ -44,7 +44,7 @@ function handle_projects(string $method, ?int $id, array $user): void
         $stmt->bindValue($position, $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        json_response($stmt->fetchAll(), 200, pagination_meta($total, $page, $perPage));
+        json_response(array_map('project_with_progress', $stmt->fetchAll()), 200, pagination_meta($total, $page, $perPage));
     }
 
     if ($id !== null && $method === 'GET') {
@@ -138,6 +138,14 @@ function handle_projects(string $method, ?int $id, array $user): void
             'start_date' => array_key_exists('start_date', $input) ? $input['start_date'] : $current['start_date'],
             'end_date' => array_key_exists('end_date', $input) ? $input['end_date'] : $current['end_date'],
         ]);
+        $progress = $current['progress'];
+        if (array_key_exists('progress', $input)) {
+            $tasksStmt = $pdo->prepare('SELECT COUNT(*) FROM tasks WHERE project_id = ? AND deleted_at IS NULL');
+            $tasksStmt->execute([$id]);
+            if ((int) $tasksStmt->fetchColumn() === 0) {
+                $progress = bounded_int($input['progress'], (int) $current['progress'], 0, 100);
+            }
+        }
         $ownerId = int_or_null($current['owner_id']);
         if (user_can_view_all($user) && array_key_exists('owner_id', $input)) {
             if ($input['owner_id'] !== null && $input['owner_id'] !== '') {
@@ -163,7 +171,7 @@ function handle_projects(string $method, ?int $id, array $user): void
             array_key_exists('hourly_rate', $input) ? money_value($input['hourly_rate']) : $current['hourly_rate'],
             $start,
             $end,
-            array_key_exists('progress', $input) ? bounded_int($input['progress'], (int) $current['progress'], 0, 100) : $current['progress'],
+            $progress,
             $ownerId,
             array_key_exists('description', $input) ? clean_string($input['description'], 5000) : $current['description'],
             now_utc(),

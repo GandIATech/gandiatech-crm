@@ -313,7 +313,7 @@ function enhanceLeadDialog(dialog) {
     }
     submit.disabled = true;
     try {
-      const activity = await request(`/leads/${leadId}/activities`, {
+      const { data: activity } = await request(`/leads/${leadId}/activities`, {
         method: "POST",
         body: {
           type: data.get("type"),
