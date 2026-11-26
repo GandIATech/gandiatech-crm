@@ -22,3 +22,13 @@
 
 # Paquetes generados.
 /dist/
+
+# Informes internos de auditoría, planes de corrección y notas de trabajo.
+/INFORME-*.md
+/Auditoria_*.html
+/PLAN-CORRECCION-*.md
+
+# Metadatos locales de herramientas y editores.
+/.freebuff/
+/.vscode/
+/.idea/
