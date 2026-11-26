@@ -15,4 +15,12 @@ return [
         'driver' => 'sqlite',
         'path' => 'data/crm.sqlite',
     ],
+    // Incidencias de usuarios: se crean como issues en GitHub mediante la API.
+    // El token debe ser fine-grained (o clásico) con permiso «Issues: write»
+    // sobre el repositorio. Sin token, el botón de reporte devuelve un aviso.
+    'github' => [
+        'repo' => 'GandIATech/gandiatech-crm',
+        'token' => '',
+        'api' => 'https://api.github.com',
+    ],
 ];

@@ -142,6 +142,10 @@ try {
             require BASE_PATH . '/src/api/updates.php';
             handle_updates($method, $action, $user);
             break;
+        case 'feedback':
+            require BASE_PATH . '/src/api/feedback.php';
+            handle_feedback($method, $user);
+            break;
         default:
             throw new HttpError('Recurso no encontrado.', 404);
     }

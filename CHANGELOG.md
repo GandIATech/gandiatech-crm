@@ -6,6 +6,18 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- Botón **Reportar un problema** en la barra lateral, encima de «Ayuda y
+  formación». Abre un formulario (tipo, título y descripción) y crea un issue en
+  el repositorio de GitHub configurado mediante la API, sin que el usuario
+  necesite cuenta de GitHub ni intervenga el correo. El issue es público, así
+  que el formulario avisa de no incluir datos de clientes y solo adjunta
+  contexto técnico (versión, PHP, base de datos, rol y página).
+- Configuración opcional `github` (`repo`, `token` y `api`) en
+  `config/config.php`; el token debe permitir escribir issues en ese
+  repositorio. Sin token, el envío responde con un aviso claro.
+
 ### Cambiado
 
 - El avance de un proyecto con tareas se calcula a partir de las tareas
