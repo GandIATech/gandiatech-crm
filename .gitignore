@@ -1,8 +1,16 @@
 # Configuración local: contiene la app_key y credenciales de base de datos.
 /config/config.php
 
-# Informe interno de auditoría: incluye rutas locales y detalles de seguridad.
+# Informes internos de auditoría, planes de corrección y notas de trabajo.
+/INFORME-*.md
 /INFORME-SEGURIDAD-QA.md
+/Auditoria_*.html
+/PLAN-CORRECCION-*.md
+
+# Metadatos locales de herramientas y editores.
+/.freebuff/
+/.vscode/
+/.idea/
 
 # Clave privada de firma de actualizaciones (solo para configurarla en GitHub).
 /data/update-signing.key
