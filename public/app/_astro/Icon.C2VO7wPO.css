@@ -3,3 +3,8 @@
 .w-auto{width:auto}
 .max-w-none{max-width:none}
 @media (min-width:64rem){.lg\:h-10{height:calc(var(--spacing) * 10)}}
+
+/* Panel de notificaciones: centrado en pantalla en móvil */
+@media (max-width:639.98px){
+  #notifications-panel{position:fixed;top:90px;left:50vw;right:auto;transform:translateX(-50%);width:min(92vw,360px);max-height:calc(100dvh - 106px);overflow-y:auto}
+}
