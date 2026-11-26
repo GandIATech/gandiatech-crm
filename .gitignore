@@ -7,8 +7,11 @@
 # Clave privada de firma de actualizaciones (solo para configurarla en GitHub).
 /data/update-signing.key
 
-# Caché de comprobación de actualizaciones y paquetes temporales.
+# Caché de comprobación de actualizaciones, inventario y paquetes temporales.
 /data/update-check.json
+/data/installed-files.json
+/data/maintenance.json
+/data/updates/
 /data/tmp/
 
 # Datos locales, copias de seguridad y adjuntos subidos.

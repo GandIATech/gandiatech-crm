@@ -4,6 +4,21 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Añadido
+
+- Actualización en un clic desde **Configuración → Actualizaciones**: el CRM
+  descarga un paquete delta acumulado desde la versión instalada, verifica la
+  firma Ed25519 y el SHA-256, guarda una copia de los ficheros y de la base de
+  datos, aplica las migraciones y comprueba el resultado. Si falla, restaura los
+  ficheros anteriores.
+- Inventario firmado de ficheros por release y generación automática de deltas
+  acumulados desde las últimas seis etiquetas. Las versiones antiguas usan el
+  paquete completo como respaldo.
+- Modo mantenimiento breve durante la copia y detección de ficheros modificados
+  localmente antes de sobrescribirlos.
+
 ## [1.3.0] - 2026-11-26
 
 ### Añadido

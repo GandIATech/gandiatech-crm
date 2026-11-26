@@ -220,6 +220,22 @@ function initImport() {
   });
 }
 
+function formatUpdateSize(bytes) {
+  const size = Number(bytes) || 0;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function hideApplyBox() {
+  document.getElementById("updates-apply-box")?.classList.add("hidden");
+  const forceWrap = document.getElementById("updates-force-wrap");
+  forceWrap?.classList.add("hidden");
+  forceWrap?.classList.remove("flex");
+  const progress = document.getElementById("updates-progress");
+  if (progress) progress.textContent = "";
+}
+
 async function loadUpdates(force) {
   const state = document.getElementById("updates-state");
   const message = document.getElementById("updates-message");
@@ -229,6 +245,7 @@ async function loadUpdates(force) {
   if (!state || !message || !details || !download) return;
 
   if (button) button.disabled = true;
+  hideApplyBox();
   message.textContent = "Consultando la última versión publicada…";
   try {
     const payload = await request(`/updates/check${force ? "?force=1" : ""}`);
@@ -249,11 +266,14 @@ async function loadUpdates(force) {
     details.classList.remove("hidden");
     const latest = document.getElementById("updates-latest");
     if (latest) latest.textContent = `Nueva versión ${data.latest} disponible`;
+
+    const artifact = data.delta || data.full || {};
     const meta = [
-      `Tamaño: ${(Number(data.size) / 1024 / 1024).toFixed(1)} MB`,
+      `Paquete: ${formatUpdateSize(artifact.size)}`,
+      artifact.files ? `${artifact.files} archivos` : "",
       `PHP mínimo: ${data.min_php}`,
-      `Esquema actual: ${data.current_db_version}${data.db_version ? ` · paquete: ${data.db_version}` : ""}`,
-    ];
+      `Esquema: ${data.current_db_version}${data.db_version ? ` → ${data.db_version}` : ""}`,
+    ].filter(Boolean);
     if (data.checked_at) meta.push(`Comprobado ${relativeTime(data.checked_at)}`);
     const metaLine = document.getElementById("updates-meta");
     if (metaLine) metaLine.textContent = meta.join(" · ");
@@ -270,18 +290,80 @@ async function loadUpdates(force) {
 
     download.href = "/api/updates/download";
     download.classList.remove("hidden");
-    message.textContent = data.php_ok
-      ? "Descarga el paquete verificado y sigue las instrucciones del README. Haz copia de seguridad antes de actualizar."
-      : `La nueva versión requiere PHP ${data.min_php}, pero este servidor usa ${data.current_php}. Actualiza PHP antes de instalar.`;
+    if (data.available && data.can_apply) {
+      const box = document.getElementById("updates-apply-box");
+      const summary = document.getElementById("updates-apply-summary");
+      box?.classList.remove("hidden");
+      const deleted = data.delta?.deleted ? ` y se eliminarán ${data.delta.deleted}` : "";
+      if (summary) {
+        summary.textContent = data.delta
+          ? `Hay un paquete preparado desde tu versión ${data.current}: ${artifact.files ?? 0} archivos${deleted}.`
+          : `Se aplicarán ${artifact.files ?? 0} archivos del paquete completo.`;
+      }
+      message.textContent = data.php_ok
+        ? "Pulsa «Actualizar ahora» y el CRM se actualizará en este hosting. No tienes que descargar ni subir nada."
+        : `La nueva versión requiere PHP ${data.min_php}, pero este servidor usa ${data.current_php}. Actualiza PHP antes de instalar.`;
+    } else {
+      message.textContent = data.php_ok
+        ? `La actualización automática no está disponible: ${data.apply_reason || "este servidor no permite escribir en la carpeta del CRM."} Puedes descargar el paquete verificado y subirlo manualmente.`
+        : `La nueva versión requiere PHP ${data.min_php}, pero este servidor usa ${data.current_php}. Actualiza PHP antes de instalar.`;
+    }
     if (data.warning) message.textContent += ` ${data.warning}`;
   } catch (error) {
     state.className = "badge bg-cream text-muted";
     message.textContent = error.message;
     details.classList.add("hidden");
     download.classList.add("hidden");
+    hideApplyBox();
     toast(error.message, "error");
   } finally {
     if (button) button.disabled = false;
+  }
+}
+
+async function applyUpdate() {
+  const password = document.getElementById("updates-password");
+  const apply = document.getElementById("updates-apply");
+  const progress = document.getElementById("updates-progress");
+  const force = document.getElementById("updates-force");
+  const forceWrap = document.getElementById("updates-force-wrap");
+  if (!password || !apply) return;
+  if (!password.value) {
+    if (progress) progress.textContent = "Introduce tu contraseña para confirmar.";
+    password.focus();
+    return;
+  }
+
+  const confirmed = await confirmDialog({
+    title: "Actualizar el CRM",
+    message: "Se hará una copia de seguridad y el CRM estará en mantenimiento unos segundos. ¿Continuar?",
+    confirmLabel: "Actualizar",
+  });
+  if (!confirmed) return;
+
+  apply.disabled = true;
+  password.disabled = true;
+  if (progress) progress.textContent = "Descargando y aplicando la actualización. No cierres esta página…";
+  try {
+    const payload = await request("/updates/apply", {
+      method: "POST",
+      body: { password: password.value, force: Boolean(force?.checked) },
+    });
+    const result = payload.data;
+    if (progress) progress.textContent = `Actualizado a la versión ${result.to}. Recargando…`;
+    toast(`CRM actualizado a la versión ${result.to}.`);
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (error) {
+    if (progress) progress.textContent = error.message;
+    if (String(error.message).includes("modificados") && forceWrap) {
+      forceWrap.classList.remove("hidden");
+      forceWrap.classList.add("flex");
+    }
+    toast(error.message, "error");
+  } finally {
+    apply.disabled = false;
+    password.disabled = false;
+    password.value = "";
   }
 }
 
@@ -289,6 +371,10 @@ function initUpdates() {
   const panel = document.getElementById("updates-panel");
   if (!panel || currentUser()?.role !== "admin") return;
   document.getElementById("updates-check")?.addEventListener("click", () => loadUpdates(true));
+  document.getElementById("updates-apply")?.addEventListener("click", applyUpdate);
+  document.getElementById("updates-password")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyUpdate();
+  });
   loadUpdates(false);
 }
 

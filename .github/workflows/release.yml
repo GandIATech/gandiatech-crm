@@ -32,6 +32,8 @@ jobs:
       - name: Checkout
         if: steps.check.outputs.skip != 'true'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar PHP
         if: steps.check.outputs.skip != 'true'
@@ -56,28 +58,43 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: ./empaquetar-distribucion.sh "${GITHUB_REF_NAME#v}"
 
-      - name: Generar manifiesto
+      - name: Generar inventario y deltas acumulados
         if: steps.check.outputs.skip != 'true'
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           ZIP="dist/gandiatech-crm-basico-$VERSION.zip"
           test -f "$ZIP"
-          SHA=$(sha256sum "$ZIP" | awk '{print $1}')
-          SIZE=$(stat -c%s "$ZIP")
           DB_VERSION=$(ls database/migrations/*.sql 2>/dev/null | sed -E 's#.*/([0-9]{3,})_.*#\1#' | sort -n | tail -1)
           DB_VERSION=$((10#${DB_VERSION:-1}))
-          cat > dist/latest.json <<EOF
-          {
-            "version": "$VERSION",
-            "tag": "$GITHUB_REF_NAME",
-            "min_php": "8.2",
-            "db_version": $DB_VERSION,
-            "sha256": "$SHA",
-            "size": $SIZE,
-            "download_url": "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$(basename "$ZIP")",
-            "changelog_url": "https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md"
-          }
-          EOF
+
+          FROM_ARGS=()
+          PREV_TAGS=$(git tag --list 'v*' --sort=-v:refname | grep -vx "$GITHUB_REF_NAME" | head -12)
+          for TAG in $PREV_TAGS; do
+            PREV_VERSION="${TAG#v}"
+            PREV_DIR="$RUNNER_TEMP/from-$PREV_VERSION"
+            rm -rf "$PREV_DIR"
+            if ! git worktree add --detach "$PREV_DIR" "$TAG" >/dev/null 2>&1; then
+              echo "Aviso: no se pudo preparar $TAG para el delta."
+              continue
+            fi
+            if [ -f "$PREV_DIR/empaquetar-distribucion.sh" ]; then
+              bash "$PREV_DIR/empaquetar-distribucion.sh" "$PREV_VERSION" >/dev/null
+              PREV_PACKAGE="$PREV_DIR/dist/gandiatech-crm-basico-$PREV_VERSION"
+              if [ -d "$PREV_PACKAGE" ]; then
+                FROM_ARGS+=("--from=$PREV_VERSION:$PREV_PACKAGE")
+              fi
+            fi
+          done
+
+          php tools/build-update-manifests.php \
+            --version="$VERSION" \
+            --tag="$GITHUB_REF_NAME" \
+            --repo="$GITHUB_REPOSITORY" \
+            --package="dist/gandiatech-crm-basico-$VERSION" \
+            --zip="$ZIP" \
+            --out=dist \
+            --db-version="$DB_VERSION" \
+            "${FROM_ARGS[@]}"
           sha256sum "$ZIP" > "$ZIP.sha256"
 
       - name: Firmar manifiesto
@@ -118,11 +135,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          DELTAS=(dist/gandiatech-crm-delta-*.zip)
+          if [ ! -e "${DELTAS[0]}" ]; then
+            DELTAS=()
+          fi
           gh release create "$GITHUB_REF_NAME" \
             "dist/gandiatech-crm-basico-$VERSION.zip" \
             "dist/gandiatech-crm-basico-$VERSION.zip.sha256" \
             dist/latest.json \
             dist/latest.json.sig \
+            "${DELTAS[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --title "GandiaTech CRM $VERSION" \
             --notes-file dist/release-notes.md

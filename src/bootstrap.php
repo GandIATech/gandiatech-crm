@@ -111,6 +111,33 @@ require __DIR__ . '/Auth.php';
 require __DIR__ . '/Mailer.php';
 require __DIR__ . '/Notifier.php';
 
+// Mientras se copian los ficheros de una actualización, el resto de peticiones
+// recibe una página de mantenimiento breve. Si el proceso murió a medias, el
+// aviso caduca solo para no dejar el CRM bloqueado.
+if (PHP_SAPI !== 'cli' && app_installed() && is_file(BASE_PATH . '/data/maintenance.json')) {
+    $rawMaintenance = @file_get_contents(BASE_PATH . '/data/maintenance.json');
+    $maintenance = $rawMaintenance !== false ? json_decode($rawMaintenance, true) : null;
+    $startedAt = is_array($maintenance) ? (int) ($maintenance['started_at'] ?? 0) : 0;
+    if ($startedAt > 0 && time() - $startedAt < 900) {
+        http_response_code(503);
+        header('Retry-After: 60');
+        header('Cache-Control: no-store');
+        if (str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), '/api/')) {
+            json_error('El CRM se está actualizando. Vuelve en un minuto.', 503);
+        }
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Actualizando el CRM</title></head>'
+            . '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#FBF9F5;color:#1F1B16;font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:24px">'
+            . '<main style="max-width:520px;background:#fff;border:1px solid #E9E4DA;border-radius:20px;padding:28px;text-align:center">'
+            . '<h1 style="font-size:1.35rem;margin:0 0 .6rem">Actualizando el CRM</h1>'
+            . '<p style="margin:0;color:#5E6472;line-height:1.6">Estamos instalando una versión nueva. Esta página se recargará en un minuto.</p>'
+            . '<script>setTimeout(function(){location.reload();},60000);</script>'
+            . '</main></body></html>';
+        exit;
+    }
+    @unlink(BASE_PATH . '/data/maintenance.json');
+}
+
 if (app_installed()) {
     Database::init();
 }

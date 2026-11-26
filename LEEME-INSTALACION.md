@@ -198,6 +198,27 @@ return [
 
 ## 8. Actualizar una instalación existente
 
+### Actualización en un clic (recomendada)
+
+1. Entra como administrador y abre **Configuración → Actualizaciones**.
+2. Pulsa **Actualizar ahora**, confirma con tu contraseña y espera. El CRM
+   descarga solo los ficheros que cambian, hace una copia de seguridad y aplica
+   las migraciones. `config/` y `data/` no se tocan.
+3. Si algo falla, los ficheros anteriores se restauran automáticamente. La copia
+   queda en `data/updates/backup/` y el volcado de la base de datos junto a ella.
+
+La primera versión que incorpora el actualizador hay que instalarla una vez de
+forma manual. A partir de ahí, las siguientes se pueden aplicar desde el panel.
+Si el hosting no permite escribir en la carpeta del CRM, el botón no aparece y
+se ofrece el paquete completo para subirlo por FTP.
+
+Los paquetes delta son acumulados: si estás en la 1.2.0 y la última es la 1.5.0,
+se descarga un único paquete 1.2.0 → 1.5.0, no una cadena de parches. Se generan
+para las últimas doce etiquetas; para una versión más antigua se usa el ZIP
+completo, que tampoco sobrescribe `config/` ni `data/`.
+
+### Actualización manual
+
 1. **Copia de seguridad** de `config/` y `data/` (o usa *Configuración → Copias
    de seguridad*).
 2. Sustituye en el servidor las carpetas `app/`, `api/`, `src/`, `database/` y
@@ -208,8 +229,21 @@ return [
    **Configuración → Actualizaciones**, que comprueba la firma Ed25519 y el
    SHA-256 del ZIP antes de entregarlo.
 
-El ZIP publicado incluye `latest.json` y su firma en cada Release; el panel solo
-acepta paquetes cuya firma y checksum coincidan.
+El ZIP publicado incluye `latest.json`, su inventario de ficheros y los deltas
+en cada Release; el panel solo acepta paquetes cuya firma y checksum coincidan.
+
+### Requisitos del actualizador
+
+- PHP 8.2 y extensión `sodium`.
+- `ZipArchive` o `Phar` para descomprimir.
+- Permisos de escritura del usuario de PHP en la carpeta del CRM, `src/`,
+  `app/`, `api/`, `vendor/` y `database/`. En cPanel suele ser el propietario
+  habitual de la cuenta; en un VPS con PHP-FPM puede requerir `chown`.
+- Espacio libre para el paquete y la copia de seguridad.
+
+El actualizador conserva un `.htaccess` personalizado, no vuelve a copiar
+`install/` y se detiene si detecta ficheros modificados a mano. En ese caso se
+puede forzar la actualización después de revisar la copia de seguridad.
 
 ## 9. Problemas frecuentes
 

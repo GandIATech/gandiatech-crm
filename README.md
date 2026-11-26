@@ -74,13 +74,24 @@ vendor/          Dependencias de Composer (PHPMailer)
 ## Actualizaciones
 
 Cada versión se publica como un ZIP en **Releases**, con su checksum SHA-256
-y un manifiesto `latest.json` firmado. Los administradores pueden comprobar si
-hay una versión nueva y descargar el paquete verificado desde **Configuración →
-Actualizaciones**.
+y un manifiesto `latest.json` firmado. El manifiesto incluye el inventario de
+ficheros de la versión y paquetes delta acumulados desde las últimas versiones.
 
-La actualización consiste en reemplazar `src/`, `public/`, `database/` y
-`vendor/`, conservando `config/` y `data/`. Las migraciones de base de datos se
-aplican automáticamente al arrancar.
+Desde **Configuración → Actualizaciones**, un administrador puede pulsar
+**Actualizar ahora**: el CRM descarga solo los ficheros que cambian, verifica la
+firma, hace una copia de seguridad de los ficheros reemplazados y de la base de
+datos, aplica las migraciones y comprueba el resultado. Si algo falla, restaura
+los ficheros anteriores automáticamente. `config/` y `data/` nunca se tocan.
+
+La primera instalación que incorpora el actualizador debe actualizarse una vez
+de forma manual (o con el paquete completo) para que el motor quede en el
+servidor. A partir de ahí, las siguientes versiones se pueden aplicar en un clic.
+
+Requisitos: PHP 8.2, extensión `sodium`, y permisos de escritura para el usuario
+de PHP en la carpeta del CRM. Si el hosting no permite escribir, la pantalla
+ofrece el paquete completo para subirlo por FTP. Los deltas se generan para las
+últimas doce etiquetas publicadas; para versiones más antiguas se usa el ZIP
+completo, que tampoco sobrescribe `config/` ni `data/`.
 
 Haz siempre una copia de seguridad de `config/` y `data/` antes de actualizar.
 

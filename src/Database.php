@@ -311,6 +311,76 @@ final class Database
     }
 
     /**
+     * Aplica ahora las migraciones pendientes. Lo usa el actualizador después
+     * de copiar los ficheros y antes de comprobar la salud de la instalación.
+     */
+    public static function migrateNow(): void
+    {
+        self::migrate();
+    }
+
+    /**
+     * Guarda una copia de seguridad de la base de datos en un fichero.
+     * Devuelve la ruta final, con extensión .sqlite o .sql.
+     */
+    public static function backupToFile(string $basename): string
+    {
+        $driver = self::driver();
+        $target = $basename . ($driver === 'mysql' ? '.sql' : '.sqlite');
+        $directory = dirname($target);
+        if (!is_dir($directory) && !@mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new RuntimeException('No se pudo crear la carpeta de la copia de seguridad.');
+        }
+        if (is_file($target)) {
+            @unlink($target);
+        }
+
+        $pdo = self::pdo();
+        if ($driver !== 'mysql') {
+            $safe = str_replace("'", "''", $target);
+            $pdo->exec("VACUUM INTO '" . $safe . "'");
+            if (!is_file($target)) {
+                throw new RuntimeException('No se pudo generar el volcado SQLite.');
+            }
+            return $target;
+        }
+
+        $out = fopen($target, 'wb');
+        if ($out === false) {
+            throw new RuntimeException('No se pudo escribir la copia de seguridad MySQL.');
+        }
+        try {
+            $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+            if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+                $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+            }
+            fwrite($out, "-- Copia de seguridad CRM\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+            foreach ($tables as $table) {
+                $safeTable = str_replace('`', '``', (string) $table);
+                $create = $pdo->query('SHOW CREATE TABLE `' . $safeTable . '`')->fetch(PDO::FETCH_NUM);
+                if (!$create) {
+                    continue;
+                }
+                fwrite($out, "DROP TABLE IF EXISTS `" . $safeTable . "`;\n" . $create[1] . ";\n\n");
+                $rows = $pdo->query('SELECT * FROM `' . $safeTable . '`');
+                while ($rows !== false && ($row = $rows->fetch(PDO::FETCH_ASSOC)) !== false) {
+                    $columns = array_map(static fn ($column): string => '`' . str_replace('`', '``', (string) $column) . '`', array_keys($row));
+                    $values = array_map(static fn ($value): string => $value === null ? 'NULL' : $pdo->quote((string) $value), array_values($row));
+                    fwrite($out, 'INSERT INTO `' . $safeTable . '` (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ");\n");
+                }
+                fwrite($out, "\n");
+            }
+            fwrite($out, "SET FOREIGN_KEY_CHECKS=1;\n");
+        } finally {
+            fclose($out);
+            if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+                $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+            }
+        }
+        return $target;
+    }
+
+    /**
      * Última versión de esquema aplicada. 1 es el esquema base inicial.
      */
     public static function schemaVersion(): int

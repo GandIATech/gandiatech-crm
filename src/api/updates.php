@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once BASE_PATH . '/src/UpdateInstaller.php';
+
 const UPDATE_CACHE_TTL = 12 * 60 * 60;
 const UPDATE_MAX_MANIFEST_BYTES = 65536;
 const UPDATE_MAX_SIGNATURE_BYTES = 8192;
@@ -18,6 +20,19 @@ function handle_updates(string $method, ?string $action, array $user): void
         updates_download();
     }
 
+    if ($method === 'GET' && $action === 'status') {
+        json_response([
+            'current' => APP_VERSION,
+            'installed' => UpdateInstaller::installedSummary(),
+            'state' => UpdateInstaller::state(),
+            'capabilities' => UpdateInstaller::capabilities(),
+        ]);
+    }
+
+    if ($method === 'POST' && $action === 'apply') {
+        updates_apply($user);
+    }
+
     throw new HttpError('Acción no encontrada.', 404);
 }
 
@@ -26,6 +41,12 @@ function updates_check(): array
     $result = updates_manifest(query_string('force') === '1');
     $manifest = $result['manifest'];
     $minPhp = (string) ($manifest['min_php'] ?? '8.2');
+
+    $delta = UpdateInstaller::deltaFor($manifest, APP_VERSION);
+    $capabilities = UpdateInstaller::capabilities();
+    $hasInventory = isset($manifest['files']) && is_array($manifest['files']) && $manifest['files'] !== [];
+    $canApply = $hasInventory && version_compare((string) $manifest['version'], APP_VERSION, '>')
+        && version_compare(PHP_VERSION, $minPhp, '>=') && $capabilities['ok'];
 
     return [
         'current' => APP_VERSION,
@@ -39,10 +60,71 @@ function updates_check(): array
         'size' => (int) $manifest['size'],
         'sha256' => (string) $manifest['sha256'],
         'changelog_url' => (string) ($manifest['changelog_url'] ?? ''),
+        'can_apply' => $canApply,
+        'apply_reason' => $canApply ? null : ($capabilities['reasons'][0] ?? ($hasInventory ? 'Actualización automática no disponible.' : 'Esta versión todavía no publica el inventario de ficheros.')),
+        'capabilities' => $capabilities,
+        'delta' => $delta === null ? null : [
+            'from' => $delta['from'],
+            'to' => (string) $manifest['version'],
+            'size' => $delta['size'],
+            'files' => $delta['files'],
+            'deleted' => $delta['deleted'],
+        ],
+        'full' => [
+            'size' => (int) $manifest['size'],
+            'files' => $hasInventory ? count($manifest['files']) : null,
+        ],
         'checked_at' => gmdate('Y-m-d\TH:i:s\Z', $result['checked_at']),
         'cached' => $result['cached'],
         'warning' => $result['warning'],
     ];
+}
+
+function updates_apply(array $user): never
+{
+    $input = json_input();
+    $password = string_value($input['password'] ?? '');
+    if ($password === '' || strlen($password) > Security::PASSWORD_MAX_LENGTH) {
+        throw new HttpError('Revisa los campos marcados.', 422, ['password' => 'Introduce tu contraseña para confirmar.']);
+    }
+
+    $row = record_or_404('users', (int) $user['id']);
+    if (!password_verify($password, (string) $row['password_hash'])) {
+        throw new HttpError('Revisa los campos marcados.', 422, ['password' => 'La contraseña no es correcta.']);
+    }
+
+    $result = updates_manifest(true);
+    $manifest = $result['manifest'];
+
+    try {
+        $summary = UpdateInstaller::apply($manifest, [
+            'force' => !empty($input['force']),
+        ]);
+    } catch (HttpError $e) {
+        throw $e;
+    }
+
+    log_activity('settings', null, 'actualizacion_aplicada', 'ha actualizado el CRM de ' . $summary['from'] . ' a ' . $summary['to']);
+    updates_notify_result($user, $summary);
+    json_response($summary);
+}
+
+function updates_notify_result(array $user, array $summary): void
+{
+    try {
+        $html = Mailer::template(
+            'CRM actualizado a la versión ' . $summary['to'],
+            'La actualización se ha completado correctamente. Se han actualizado '
+            . (int) $summary['written'] . ' archivos y se han eliminado '
+            . (int) $summary['deleted'] . '. La copia de seguridad está en '
+            . (string) $summary['backup'] . '.',
+            'Abrir el CRM',
+            rtrim(base_url(), '/') . '/app/settings/'
+        );
+        Mailer::deliver((string) $user['email'], (string) $user['name'], '[GandiaTech CRM] Actualización completada', $html);
+    } catch (Throwable $e) {
+        error_log('[CRM] Aviso de actualización: ' . $e->getMessage());
+    }
 }
 
 /**

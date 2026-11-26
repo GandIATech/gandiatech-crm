@@ -254,6 +254,35 @@ final class Installer
         }
 
         self::writeConfig($db);
+        self::writeInstalledInventory();
+    }
+
+    /**
+     * Deja una foto de los ficheros instalados para que la primera
+     * actualización pueda distinguir cambios propios de cambios de versión.
+     */
+    private static function writeInstalledInventory(): void
+    {
+        require_once __DIR__ . '/UpdateInventory.php';
+        try {
+            $files = UpdateInventory::scan(BASE_PATH);
+            $map = [];
+            foreach ($files as $file) {
+                $map[$file['path']] = ['sha256' => $file['sha256'], 'size' => $file['size']];
+            }
+            $dir = BASE_PATH . '/data';
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            @file_put_contents($dir . '/installed-files.json', json_encode([
+                'version' => defined('APP_VERSION') ? APP_VERSION : '0.0.0',
+                'generated_at' => gmdate('Y-m-d\TH:i:s\Z'),
+                'files' => $map,
+            ], JSON_UNESCAPED_SLASHES), LOCK_EX);
+        } catch (Throwable $e) {
+            // La instalación no debe fallar por no poder preparar el inventario.
+            error_log('[CRM] Inventario inicial: ' . $e->getMessage());
+        }
     }
 
     /**
