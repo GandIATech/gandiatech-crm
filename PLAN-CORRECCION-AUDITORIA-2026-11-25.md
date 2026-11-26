@@ -6,9 +6,61 @@ Basado en la auditoría funcional del 25/11/2026 (hallazgos H01–H06).
 
 ---
 
+## Estado de ejecución (26/11/2026)
+
+Referencia: commit `705760f`, que incorpora este plan y el informe de auditoría.
+Solo se han ejecutado las tareas que no alteran el comportamiento de la aplicación.
+
+**Ejecutado**
+
+- Fase 0 · Copia de seguridad de la base de datos local en
+  `data/crm.sqlite.bak-auditoria-2026-11-25` (excluida de git).
+- Fase 0 · Arranque local verificado con `php -S 127.0.0.1:8002 router.php`:
+  `/app/` responde 200 y `/api/meta` devuelve el 401 JSON esperado sin sesión.
+- Fase 4 · H03 **sigue abierto**. La inspección inicial lo daba por corregido,
+  pero al contrastar con `public/app/_astro/ui.CJdB5Grl.js` se confirma que
+  `request()` devuelve `{ data, meta }` y el render inmediato de
+  `leads-extras.js` lee `activity.type`, `activity.description` y
+  `activity.date` directamente del sobre. Al no existir esas claves, pinta
+  «Interacción:» sin descripción y la fecha como «—»: coincide con el síntoma
+  del informe. El servidor sí devuelve los tres campos
+  (`src/api/leads.php:52-58`). No probado en navegador.
+- Fase 8 · Revisado `.gitignore`: la base de datos, los logs, los adjuntos y
+  `dist/` ya quedaban fuera; se añade el patrón `/data/*.sqlite.bak-*` para las
+  copias de seguridad. El script de empaquetado no incluye datos ni logs.
+- Fase 0 · Confirmado que `public/app/_astro/` **es el frontend activo**, no un
+  resto de compilación: las diez páginas de `public/app/` enlazan
+  `Icon.C2VO7wPO.css`, los bundles de página importan `ui`, `format`,
+  `task-form` y `crm-extras`, los 19 archivos del directorio tienen al menos
+  una referencia y el servidor local los entrega con 200. Además, `public/app`
+  es idéntico byte a byte a `dist/gandiatech-crm-basico-1.2.0/app`, de modo que
+  hoy no existe ningún parche manual sobre el build y borrar `_astro` dejaría
+  la aplicación sin estilos ni interactividad.
+- Fase 0 · La demo pública `gandia.tech/crm_demo` sirve los mismos bundles
+  (mismos hashes; solo cambia el prefijo de ruta a `/crm_demo`), por lo que no
+  está desactualizada y H03 no depende de un despliegue pendiente.
+
+**No ejecutado (afecta a funcionalidad o requiere una decisión previa)**
+
+- Fases 1, 2, 3, 5 y 6: H01, H02, H04, H05 y H06 implican cambios de
+  comportamiento o parches en bundles compilados. Quedan pendientes dentro del
+  alcance funcional del plan.
+- Fase 4: H03 está diagnosticado (respuesta sin desempaquetar) pero no
+  parcheado, porque la corrección altera el renderizado del historial.
+- Fase 0: no se crea la rama `fix/auditoria-2026-11-25` porque no hay cambios
+  funcionales que aislar; el login con dos roles y los datos `QA-FIX` tampoco se
+  han creado, ya que requieren credenciales y modifican la base de trabajo.
+- Fase 7: la matriz de regresión requiere la app arrancada con sesión y datos
+  reales; no se ha ejecutado.
+- Fase 8: no se sube `APP_VERSION`, no se actualiza `CHANGELOG.md` y no se
+  genera ni prueba el paquete, porque aún no hay correcciones funcionales que
+  entregar.
+
+---
+
 ## Decisiones previas (antes de tocar código)
 
-**D1 · Fuente del frontend.** En el repositorio solo están los bundles compilados (`public/app/_astro/`), no el proyecto Astro. Hay dos caminos:
+**D1 · Fuente del frontend.** En el repositorio solo están los bundles compilados (`public/app/_astro/`), no el proyecto Astro. Comprobado el 26/11/2026: ese directorio es el frontend que se sirve en producción, no un residuo; los 19 archivos están referenciados y `public/app` coincide con el paquete 1.2.0. Por tanto H01 y H06 exigen fuente Astro o parche sobre los bundles. Hay dos caminos:
 
 - **A (recomendado):** recuperar el proyecto Astro original y hacer los cambios allí; después recompilar. Es la única forma sostenible.
 - **B (si no hay fuente):** parchear los bundles y concentrar la lógica nueva en los `*-extras.js`. Funciona, pero cualquier recompilación futura sobrescribe los cambios. En ese caso, anotar cada parche en `docs/parches-frontend.md`.
@@ -108,13 +160,13 @@ Basado en la auditoría funcional del 25/11/2026 (hallazgos H01–H06).
 
 ## Fase 4 · H03 — Historial tras guardar (1–2 h, principalmente verificación)
 
-**Situación:** ya corregido en `leads-extras.js` (pinta tipo, descripción y `formatDate(activity.date)`); el servidor devuelve `description` y `date` en el POST de actividades (`src/api/leads.php:39-46`).
+**Situación:** causa identificada por inspección, pendiente de parche. El POST de actividades devuelve `id`, `type`, `type_label`, `description` y `date` (`src/api/leads.php:52-58`), pero `request()` de `ui.CJdB5Grl.js` devuelve `{ data, meta }`. El render inmediato de `leads-extras.js` hace `const activity = await request(...)` y lee `activity.type`, `activity.description` y `formatDate(activity.date)`: al no existir esas claves en el sobre, se pinta «Interacción:» sin texto y la fecha como «—». Al reabrir la ficha se lee del listado real y todo aparece correcto, que es el síntoma del informe. No es un problema de orden de carga ni del selector `.mt-3`.
 
 **Pasos:**
 
-- [ ] Verificar en la versión 1.2.0 local: registrar una interacción y comparar el timeline inmediato con la ficha reabierta.
-- [ ] Si el fallo se reproduce, revisar el orden de carga de `leads-extras.js` frente al bundle y el selector `.mt-3` usado para localizar el timeline.
-- [ ] Comparar la versión desplegada en `gandia.tech/crm_demo` con la del repositorio; si la demo está desactualizada, incluirlo en el despliegue.
+- [ ] Desempaquetar la respuesta en el manejador: `const { data: activity } = await request(...)` (una línea, `leads-extras.js`).
+- [ ] Verificar en local 1.2.0: registrar una interacción y comparar el timeline inmediato con la ficha reabierta, incluida una fecha distinta de hoy.
+- [ ] Confirmar que el formulario del bundle no tiene un camino alternativo de alta de interacciones (hoy no lo tiene: el único formulario es el de `leads-extras.js`).
 - [ ] Añadir comprobación de regresión a la matriz de QA.
 
 **Aceptación:** la actividad recién guardada muestra autor, tipo, descripción y fecha útil sin reabrir la ficha.
