@@ -8,15 +8,13 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
-- Botón **Reportar un problema** en la barra lateral, encima de «Ayuda y
-  formación». Abre un formulario (tipo, título y descripción) y crea un issue en
-  el repositorio de GitHub configurado mediante la API, sin que el usuario
-  necesite cuenta de GitHub ni intervenga el correo. El issue es público, así
-  que el formulario avisa de no incluir datos de clientes y solo adjunta
-  contexto técnico (versión, PHP, base de datos, rol y página).
-- Configuración opcional `github` (`repo`, `token` y `api`) en
-  `config/config.php`; el token debe permitir escribir issues en ese
-  repositorio. Sin token, el envío responde con un aviso claro.
+- Botón **Enviar comentarios** en la barra lateral, encima de «Ayuda y
+  formación». Abre un formulario (tipo, título y descripción) y envía el mensaje
+  por correo al buzón configurado en `feedback_email`, usando el mismo SMTP que
+  las notificaciones. Incluye la página, el usuario que lo envía y, si se marca,
+  el contexto técnico (versión, PHP y base de datos).
+- `Mailer` admite ahora `Reply-To`, de modo que se puede responder directamente
+  al usuario que envía el comentario.
 
 ### Cambiado
 

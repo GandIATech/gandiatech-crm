@@ -3,78 +3,17 @@ declare(strict_types=1);
 
 const FEEDBACK_TYPES = [
     'error' => 'Error',
-    'mejora' => 'Mejora',
-    'pregunta' => 'Pregunta',
+    'mejora' => 'Sugerencia',
+    'pregunta' => 'Duda',
 ];
 
 /**
- * Crea una incidencia en el repositorio de GitHub configurado.
+ * Envía los comentarios de los usuarios al buzón configurado.
  *
- * Se usa la API REST con un token de servidor: el usuario del CRM no necesita
- * cuenta de GitHub y nunca ve el token.
- *
- * @return array{html_url: string, number: int}
+ * Usa el mismo SMTP que las notificaciones del CRM. Si el correo no está
+ * configurado, se devuelve un aviso claro en lugar de perder el comentario en
+ * silencio (el intento queda en email_log).
  */
-function github_create_issue(string $repo, string $token, string $api, array $payload): array
-{
-    $url = rtrim($api, '/') . '/repos/' . $repo . '/issues';
-    $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
-    if ($body === false) {
-        throw new HttpError('No se pudo preparar el reporte.', 500);
-    }
-
-    $headers = [
-        'Content-Type: application/json',
-        'Accept: application/vnd.github+json',
-        'Authorization: Bearer ' . $token,
-        'User-Agent: GandiaTech-CRM/' . APP_VERSION,
-        'X-GitHub-Api-Version: 2022-11-28',
-    ];
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => implode("\r\n", $headers),
-            'content' => $body,
-            'timeout' => 15,
-            'ignore_errors' => true,
-        ],
-    ]);
-
-    $http_response_header = [];
-    $raw = @file_get_contents($url, false, $context);
-    $status = 0;
-    foreach ($http_response_header as $line) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $match) === 1) {
-            $status = (int) $match[1];
-        }
-    }
-
-    $response = is_string($raw) ? json_decode($raw, true) : null;
-
-    if ($status === 201 && is_array($response) && isset($response['html_url'])) {
-        return [
-            'html_url' => (string) $response['html_url'],
-            'number' => (int) ($response['number'] ?? 0),
-        ];
-    }
-
-    error_log('[CRM] GitHub respondió ' . $status . ' al crear una incidencia: ' . text_substr((string) $raw, 0, 500));
-
-    if ($status === 401 || $status === 403) {
-        throw new HttpError('GitHub rechazó la credencial del CRM. Revisa el token configurado.', 502);
-    }
-    if ($status === 404) {
-        throw new HttpError('El repositorio de incidencias no existe o el token no tiene acceso.', 502);
-    }
-    if ($status === 422) {
-        throw new HttpError('GitHub rechazó el reporte. Revisa el título y la descripción.', 422);
-    }
-    if ($status === 429) {
-        throw new HttpError('GitHub ha limitado los envíos. Inténtalo más tarde.', 503);
-    }
-    throw new HttpError('No se pudo contactar con GitHub. Inténtalo más tarde.', 502);
-}
-
 function handle_feedback(string $method, array $user): void
 {
     if ($method !== 'POST') {
@@ -84,7 +23,7 @@ function handle_feedback(string $method, array $user): void
     $input = json_input();
     $type = clean_string($input['type'] ?? 'error', 20);
     if (!isset(FEEDBACK_TYPES[$type])) {
-        throw new HttpError('Revisa los campos marcados.', 422, ['type' => 'El tipo de reporte no es válido.']);
+        throw new HttpError('Revisa los campos marcados.', 422, ['type' => 'El tipo de comentario no es válido.']);
     }
 
     $title = require_text($input, 'title', 'El título', 140);
@@ -102,51 +41,48 @@ function handle_feedback(string $method, array $user): void
     }
     $includeContext = (bool) ($input['include_context'] ?? false);
 
-    $settings = config('github', []);
-    $settings = is_array($settings) ? $settings : [];
-    $repo = trim((string) ($settings['repo'] ?? ''));
-    $token = trim((string) ($settings['token'] ?? ''));
-    $api = trim((string) ($settings['api'] ?? 'https://api.github.com'));
-    if ($api === '') {
-        $api = 'https://api.github.com';
-    }
-
-    if ($token === '' || preg_match('#^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$#', $repo) !== 1) {
-        throw new HttpError('El envío de incidencias no está configurado en este CRM. Avisa al administrador.', 503);
+    $recipient = trim((string) config('feedback_email', 'contacto@gandia.tech'));
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        throw new HttpError('El buzón de comentarios no está configurado correctamente.', 503);
     }
 
     $last = (int) ($_SESSION['feedback_last_at'] ?? 0);
     if ($last > 0 && time() - $last < 60) {
-        throw new HttpError('Espera un minuto antes de enviar otro reporte.', 429);
+        throw new HttpError('Espera un minuto antes de enviar otro comentario.', 429);
     }
 
-    $body = $description . "\n\n---\n";
+    $userName = (string) ($user['name'] ?? 'Usuario');
+    $userEmail = (string) ($user['email'] ?? '');
+    $role = (string) ($user['role'] ?? '');
+
+    $lines = [
+        'Tipo: ' . FEEDBACK_TYPES[$type],
+        'De: ' . $userName . ($userEmail !== '' ? ' <' . $userEmail . '>' : ''),
+        'Rol: ' . $role,
+    ];
+    if ($page !== '') {
+        $lines[] = 'Página: ' . $page;
+    }
     if ($includeContext) {
-        $rows = [
-            'Versión' => APP_VERSION,
-            'PHP' => PHP_VERSION,
-            'Base de datos' => Database::driver(),
-            'Rol' => (string) ($user['role'] ?? ''),
-        ];
-        if ($page !== '') {
-            $rows['Página'] = str_replace('|', '\|', $page);
-        }
-        $body .= "\n**Contexto técnico**\n\n| Dato | Valor |\n|---|---|\n";
-        foreach ($rows as $label => $value) {
-            $body .= '| ' . $label . ' | ' . str_replace('|', '\|', $value) . " |\n";
-        }
+        $lines[] = 'Versión: ' . APP_VERSION . ' · PHP ' . PHP_VERSION . ' · ' . Database::driver();
     }
-    $body .= "\n_Enviado desde el CRM. No incluye datos de clientes._";
+    $lines[] = '';
+    $lines[] = $description;
+    $text = implode("\n", $lines);
 
-    $issue = github_create_issue($repo, $token, $api, [
-        'title' => '[' . FEEDBACK_TYPES[$type] . '] ' . $title,
-        'body' => $body,
-    ]);
+    $subject = '[CRM] ' . FEEDBACK_TYPES[$type] . ': ' . $title;
+    $html = Mailer::template($title, $text);
+    $result = Mailer::deliver($recipient, 'GandiaTech', $subject, $html, $text, $userEmail !== '' ? $userEmail : null);
+
+    if (!$result['ok']) {
+        error_log('[CRM] Comentario no enviado: ' . $result['error']);
+        if ($result['status'] === 'omitido') {
+            throw new HttpError('El envío de comentarios no está configurado. Avisa al administrador.', 503);
+        }
+        throw new HttpError('No se pudo enviar el comentario. Inténtalo más tarde.', 502);
+    }
 
     $_SESSION['feedback_last_at'] = time();
 
-    json_response([
-        'url' => $issue['html_url'],
-        'number' => $issue['number'],
-    ], 201);
+    json_response(['message' => 'Comentario enviado.']);
 }

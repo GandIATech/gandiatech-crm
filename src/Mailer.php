@@ -5,7 +5,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 final class Mailer
 {
-    public static function deliver(string $toEmail, string $toName, string $subject, string $html, ?string $text = null): array
+    public static function deliver(string $toEmail, string $toName, string $subject, string $html, ?string $text = null, ?string $replyTo = null): array
     {
         $toEmail = trim($toEmail);
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
@@ -43,6 +43,9 @@ final class Mailer
             $mail->CharSet = 'UTF-8';
             $mail->setFrom($fromEmail, (string) Settings::get('mail_from_name', 'GandiaTech CRM'));
             $mail->addAddress($toEmail, $toName !== '' ? $toName : $toEmail);
+            if ($replyTo !== null && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                $mail->addReplyTo($replyTo);
+            }
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $html;
@@ -58,9 +61,9 @@ final class Mailer
         }
     }
 
-    public static function send(string $toEmail, string $toName, string $subject, string $html, ?string $text = null): bool
+    public static function send(string $toEmail, string $toName, string $subject, string $html, ?string $text = null, ?string $replyTo = null): bool
     {
-        return self::deliver($toEmail, $toName, $subject, $html, $text)['ok'];
+        return self::deliver($toEmail, $toName, $subject, $html, $text, $replyTo)['ok'];
     }
 
     public static function template(string $title, string $message, string $ctaLabel = '', string $ctaUrl = ''): string

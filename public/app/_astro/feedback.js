@@ -3,8 +3,8 @@ import { request } from "./crm-extras.js";
 
 const TYPES = {
   error: "Error",
-  mejora: "Mejora",
-  pregunta: "Pregunta",
+  mejora: "Sugerencia",
+  pregunta: "Duda",
 };
 
 function mountButton() {
@@ -26,8 +26,8 @@ function mountButton() {
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
     </span>
     <span class="min-w-0">
-      <span class="flex items-center gap-1.5 text-xs font-semibold text-ink">Reportar un problema</span>
-      <span class="text-[11px] leading-snug text-muted">Cuéntanos qué falla o qué echas en falta</span>
+      <span class="flex items-center gap-1.5 text-xs font-semibold text-ink">Enviar comentarios</span>
+      <span class="text-[11px] leading-snug text-muted">Errores, sugerencias o dudas para el equipo</span>
     </span>`;
   button.addEventListener("click", openFeedback);
   helpLink.parentElement.insertBefore(button, helpLink);
@@ -37,8 +37,8 @@ function formBody() {
   return `
     <form id="feedback-form" class="space-y-4">
       <div class="rounded-xl border border-line bg-sand px-3 py-2.5 text-[11px] leading-relaxed text-[#8A5A00]">
-        El reporte se publica como <strong>issue público en GitHub</strong>.
-        No incluyas nombres de clientes, correos, importes ni contraseñas.
+        Tu comentario llega por correo al equipo de GandiaTech.
+        No incluyas contraseñas ni datos sensibles de clientes.
       </div>
       <div>
         <label class="field-label" for="feedback-type">Tipo</label>
@@ -68,12 +68,12 @@ function formBody() {
 
 function openFeedback() {
   openModal({
-    title: "Reportar un problema",
-    subtitle: "El reporte llega al repositorio del proyecto en GitHub.",
+    title: "Enviar comentarios",
+    subtitle: "El mensaje llega por correo al equipo de GandiaTech.",
     width: "min(94vw, 560px)",
     body: formBody(),
     footer: `<button type="button" class="btn btn-secondary" data-cancel>Cancelar</button>
-      <button type="submit" form="feedback-form" class="btn btn-primary" data-submit>Enviar reporte</button>`,
+      <button type="submit" form="feedback-form" class="btn btn-primary" data-submit>Enviar comentario</button>`,
     onMount: (dialog) => {
       dialog.querySelector("[data-cancel]")?.addEventListener("click", () => dialog.close());
       const form = dialog.querySelector("#feedback-form");
@@ -99,14 +99,13 @@ function openFeedback() {
             },
           });
           dialog.close();
-          toast("Reporte enviado a GitHub.");
+          toast("Comentario enviado.");
           openModal({
-            title: "Gracias por el reporte",
-            subtitle: "Ya está registrado en GitHub.",
+            title: "Gracias por el comentario",
+            subtitle: "Lo hemos recibido por correo.",
             width: "min(94vw, 460px)",
-            body: `<p class="text-[13px] leading-relaxed text-ink/80">Puedes seguir el estado de la incidencia en el repositorio del proyecto.</p>`,
-            footer: `<button type="button" class="btn btn-secondary" data-close>Cerrar</button>
-              <a class="btn btn-primary" href="${response.url}" target="_blank" rel="noopener noreferrer">Abrir issue #${response.number}</a>`,
+            body: `<p class="text-[13px] leading-relaxed text-ink/80">El equipo de GandiaTech lo revisará y, si hace falta respuesta, escribirá al correo de tu cuenta.</p>`,
+            footer: `<button type="button" class="btn btn-primary" data-close>Entendido</button>`,
             onMount: (success) => {
               success.querySelector("[data-close]")?.addEventListener("click", () => success.close());
             },
