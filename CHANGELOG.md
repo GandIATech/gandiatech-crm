@@ -4,6 +4,13 @@ Todas las versiones relevantes de GandiaTech CRM se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.4.1] - 2026-11-26
+
+### Cambiado
+
+- El acceso a los comentarios de la barra lateral es ahora un botón **Enviar
+  comentarios**. El formulario y el envío no cambian.
+
 ## [1.4.0] - 2026-11-26
 
 ### Añadido
@@ -211,6 +218,7 @@ Primera versión pública.
 - Purga en cascada de adjuntos al vaciar proyectos y leads de la papelera.
 - Migraciones idempotentes para actualizar instalaciones existentes.
 
+[1.4.1]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.4.1
 [1.4.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.4.0
 [1.3.0]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.3.0
 [1.0.1]: https://github.com/GandIATech/gandiatech-crm/releases/tag/v1.0.1

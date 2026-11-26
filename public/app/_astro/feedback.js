@@ -19,16 +19,8 @@ function mountButton() {
   const button = document.createElement("button");
   button.type = "button";
   button.id = "report-issue";
-  button.className =
-    "mt-4 flex w-full items-start gap-3 rounded-2xl border border-line bg-white/70 p-4 text-left transition hover:border-accent/40 hover:bg-white";
-  button.innerHTML = `
-    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-dark">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
-    </span>
-    <span class="min-w-0">
-      <span class="flex items-center gap-1.5 text-xs font-semibold text-ink">Enviar comentarios</span>
-      <span class="text-[11px] leading-snug text-muted">Errores, sugerencias o dudas para el equipo</span>
-    </span>`;
+  button.className = "btn btn-secondary mt-4 w-full";
+  button.textContent = "Enviar comentarios";
   button.addEventListener("click", openFeedback);
   helpLink.parentElement.insertBefore(button, helpLink);
 }
